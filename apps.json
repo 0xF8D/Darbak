@@ -1,0 +1,24 @@
+{
+  "name": "0xF8D Source",
+  "identifier": "com.f8d.source",
+  "apps": [
+    {
+      "name": "0xF8D",
+      "bundleIdentifier": "com.f8d.steps",
+      "developerName": "0xF8D",
+      "subtitle": "خطواتك ودروعك",
+      "localizedDescription": "تطبيق خطوات شخصي يقرأ من الصحة ويعطيك دروع 6K إلى 10K.",
+      "iconURL": "https://raw.githubusercontent.com/USERNAME/REPO/main/icon.png",
+      "versions": [
+        {
+          "version": "1.0",
+          "date": "2026-11-24",
+          "downloadURL": "https://github.com/USERNAME/REPO/releases/download/latest/0xF8D.ipa",
+          "size": 1500000,
+          "minOSVersion": "17.0"
+        }
+      ]
+    }
+  ],
+  "news": []
+}
