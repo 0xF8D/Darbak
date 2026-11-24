@@ -60,8 +60,6 @@ enum BackgroundRefresh {
 }
 
 struct RootView: View {
-    @EnvironmentObject var health: HealthStore
-
     var body: some View {
         TabView {
             HomeView()
@@ -74,7 +72,16 @@ struct RootView: View {
                 .tabItem { Label("إحصائيات", systemImage: "chart.bar.fill") }
         }
         .tint(Palette.cyan)
-        .overlay {
+        .overlay { CelebrationHost() }
+    }
+}
+
+/// منفصل عشان تحديثات الخطوات ما تعيد رسم التطبيق كله
+struct CelebrationHost: View {
+    @EnvironmentObject var health: HealthStore
+
+    var body: some View {
+        ZStack {
             if let tier = health.celebration {
                 CelebrationView(tier: tier) {
                     health.celebration = nil
@@ -83,5 +90,6 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: health.celebration?.steps)
+        .allowsHitTesting(health.celebration != nil)
     }
 }

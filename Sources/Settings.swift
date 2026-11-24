@@ -9,7 +9,6 @@ final class AppSettings: ObservableObject {
     private let d = UserDefaults.standard
 
     @Published var goal: Int { didSet { d.set(goal, forKey: "goal") } }
-    @Published var freezeEnabled: Bool { didSet { d.set(freezeEnabled, forKey: "freezeEnabled") } }
     @Published var reminderEnabled: Bool { didSet { d.set(reminderEnabled, forKey: "reminderEnabled") } }
     @Published var reminderHour: Int { didSet { d.set(reminderHour, forKey: "reminderHour") } }
     @Published var reminderMinute: Int { didSet { d.set(reminderMinute, forKey: "reminderMinute") } }
@@ -18,7 +17,6 @@ final class AppSettings: ObservableObject {
     init() {
         let g = d.integer(forKey: "goal")
         goal = Self.goals.contains(g) ? g : 8_000
-        freezeEnabled = d.object(forKey: "freezeEnabled") as? Bool ?? true
         reminderEnabled = d.object(forKey: "reminderEnabled") as? Bool ?? true
         reminderHour = d.object(forKey: "reminderHour") as? Int ?? 20
         reminderMinute = d.object(forKey: "reminderMinute") as? Int ?? 0
@@ -27,11 +25,11 @@ final class AppSettings: ObservableObject {
 
     var reminderTime: Date {
         get {
-            AppCalendar.riyadh.date(bySettingHour: reminderHour, minute: reminderMinute, second: 0,
+            AppCalendar.local.date(bySettingHour: reminderHour, minute: reminderMinute, second: 0,
                                     of: Date()) ?? Date()
         }
         set {
-            let c = AppCalendar.riyadh.dateComponents([.hour, .minute], from: newValue)
+            let c = AppCalendar.local.dateComponents([.hour, .minute], from: newValue)
             reminderHour = c.hour ?? 20
             reminderMinute = c.minute ?? 0
         }
@@ -102,7 +100,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            Text("أقل هدف ٧ آلاف. الستريك والتذكير يمشون على هدفك.")
+            Text("أقل هدف ٧ آلاف، والستريك والتذكير يمشون على هدفك.")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text3)
         }
@@ -112,23 +110,12 @@ struct SettingsView: View {
 
     private var toggles: some View {
         VStack(spacing: 14) {
-            Toggle(isOn: $settings.freezeEnabled) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("❄️ تجميد الستريك")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("يوم واحد بالأسبوع يحفظ الستريك لو فاتك الهدف")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundStyle(Palette.text2)
-                }
-            }
-            Divider().overlay(Color.white.opacity(0.08))
             Toggle(isOn: $settings.milestoneHaptics) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("📳 اهتزاز كل ١٠٠٠ خطوة")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("اهتزاز خفيف وأنت فاتح التطبيق أو وضع المشي شغّال")
+                    Text("يهتز الجوال خفيف كل ما تزيد ألف خطوة")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(Palette.text2)
                 }
@@ -143,12 +130,9 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             Toggle(isOn: $settings.reminderEnabled) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("🔔 التذكير المسائي")
+                    Text("🔔 نذكرك بخطواتك")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("«باقيلك ١٬٢٣٤ خطوة على هدفك يا وحش»")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundStyle(Palette.text2)
                 }
             }
             .tint(Palette.cyan)
@@ -174,7 +158,7 @@ struct SettingsView: View {
                     Text("🚶 وضع المشي")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("يشتغل بالخلفية ويعرض خطواتك على شاشة القفل والجزيرة. يستهلك بطارية أكثر.")
+                    Text("يخلي التطبيق شغّال بالخلفية وتطلع خطواتك على شاشة القفل والجزيرة على طول. ياكل بطارية شوي.")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(Palette.text2)
                 }
@@ -203,7 +187,7 @@ struct SettingsView: View {
             Text("الإصدار \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.0")")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text3)
-            Text("صُنع بواسطة 0xF8D")
+            Text("من تصميم 0xF8D")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(LinearGradient(colors: [Palette.cyan, Palette.violet], startPoint: .leading, endPoint: .trailing))
             Text("© 2026 0xF8D — جميع الحقوق محفوظة")

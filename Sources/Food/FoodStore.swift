@@ -106,11 +106,11 @@ enum ActivityLevel: Int, Codable, CaseIterable, Identifiable {
     }
     var title: String {
         switch self {
-        case .sedentary: return "قليل الحركة (دوام مكتبي)"
-        case .light: return "خفيف (رياضة ١-٣ أيام)"
-        case .moderate: return "متوسط (رياضة ٣-٥ أيام)"
-        case .high: return "عالي (رياضة ٦-٧ أيام)"
-        case .extreme: return "عالي جدًا (شغل بدني + رياضة)"
+        case .sedentary: return "قليل الحركة (دوام مكتبي وما تتمرن)"
+        case .light: return "خفيف (تتمرن ١-٣ أيام بالأسبوع)"
+        case .moderate: return "متوسط (تتمرن ٣-٥ أيام بالأسبوع)"
+        case .high: return "عالي (تتمرن ٦-٧ أيام بالأسبوع)"
+        case .extreme: return "عالي مرة (شغل بدني + تمرين يومي)"
         }
     }
 }
@@ -230,7 +230,7 @@ final class FoodStore: ObservableObject {
     }
 
     var todayLog: [FoodLogEntry] {
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         let t = AppCalendar.startOfToday()
         return log.filter { cal.startOfDay(for: $0.date) == t }.sorted { $0.date > $1.date }
     }

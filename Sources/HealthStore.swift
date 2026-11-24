@@ -118,10 +118,14 @@ final class HealthStore: ObservableObject {
 
     /// يستدعى كل ٥ ثواني وعند فتح التطبيق
     func tick(force: Bool = false) {
-        now = Date()
-        guard started else { return }
+        guard started else {
+            now = Date()
+            return
+        }
         let t = today
         if t != activeDay {
+            // دخل يوم جديد (١٢ الليل حسب ساعة الجوال): كل شي يتصفر ويبدأ من جديد
+            now = Date()
             activeDay = t
             hkDistanceKm = 0
             hkKcal = 0
@@ -131,6 +135,7 @@ final class HealthStore: ObservableObject {
             if healthReady { startQuery() }
             streakKey = ""
             recompute()
+            pushWidget(force: true)
         }
         if force || Date().timeIntervalSince(lastExtras) > 30 {
             refreshExtras()
@@ -150,7 +155,7 @@ final class HealthStore: ObservableObject {
     private func startQuery() {
         if let collectionQuery { store.stop(collectionQuery) }
 
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         let todayStart = cal.startOfDay(for: Date())
         let from = cal.date(byAdding: .year, value: -5, to: todayStart) ?? todayStart
 
@@ -177,7 +182,7 @@ final class HealthStore: ObservableObject {
         let ok = results != nil
         let message = error?.localizedDescription
         if let results {
-            let cal = AppCalendar.riyadh
+            let cal = AppCalendar.local
             for s in results.statistics() {
                 let v = s.sumQuantity()?.doubleValue(for: .count()) ?? 0
                 if v > 0 { map[cal.startOfDay(for: s.startDate)] = Int(v.rounded()) }
@@ -249,7 +254,7 @@ final class HealthStore: ObservableObject {
 
     /// تفاصيل يوم سابق (لما تضغط على دائرة)
     func dayExtras(for day: Date, steps s: Int) async -> DayExtras {
-        guard let end = AppCalendar.riyadh.date(byAdding: .day, value: 1, to: day) else {
+        guard let end = AppCalendar.local.date(byAdding: .day, value: 1, to: day) else {
             return DayExtras(distanceKm: Double(s) * 0.00075, kcal: Int(Double(s) * 0.04), floors: 0)
         }
         let d = await sum(.distanceWalkingRunning, .meterUnit(with: .kilo), from: day, to: end)
@@ -292,7 +297,7 @@ final class HealthStore: ObservableObject {
     /// الجوال يحفظ آخر ٧ أيام، نستخدمها لو الصحة متأخرة أو مقفلة
     private func loadPedometerHistory() {
         guard CMPedometer.isStepCountingAvailable() else { return }
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         let t = today
         for i in 1...6 {
             guard let s = cal.date(byAdding: .day, value: -i, to: t),
@@ -361,18 +366,18 @@ final class HealthStore: ObservableObject {
         let t = today
         let goal = settings.goal
         let reached = (steps[t] ?? 0) >= goal
-        let key = "\(t.timeIntervalSince1970)|\(goal)|\(settings.freezeEnabled)|\(reached)"
+        let key = "\(t.timeIntervalSince1970)|\(goal)|\(reached)"
         guard key != streakKey else { return }
         streakKey = key
         computeStreaks()
     }
 
     /// الستريك: أيام متتالية وصلت فيها هدفك. اليوم ما يكسر الستريك لين ينتهي.
-    /// التجميد: يوم واحد فائت بكل أسبوع (أحد إلى سبت) يحفظ الستريك بدون ما يزيده.
+    /// التجميد (تلقائي): يوم واحد فائت بكل أسبوع (أحد إلى سبت) يحفظ الستريك بدون ما يزيده.
     private func computeStreaks() {
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         let goal = settings.goal
-        let freeze = settings.freezeEnabled
+        let freeze = true
         let t = today
 
         guard let first = steps.filter({ $0.value > 0 }).keys.min() else {
@@ -479,6 +484,25 @@ final class HealthStore: ObservableObject {
 
     var todayFloors: Int { max(hkFloors, liveDay == today ? liveFloors : 0) }
 
+    var yesterday: Date {
+        AppCalendar.local.date(byAdding: .day, value: -1, to: today) ?? today
+    }
+
+    /// الستريك محفوظ بالتجميد: فاتك أمس، واليوم لسه ما قفلت هدفك
+    var streakFrozen: Bool {
+        streak > 0 && frozenDays.contains(yesterday) && todaySteps < settings.goal
+    }
+
+    /// آخر ٦ أيام قبل اليوم (من الأقدم لأمس). اليوم نفسه بالحلقة فوق.
+    func lastDays(_ n: Int = 6) -> [DayStat] {
+        let cal = AppCalendar.local
+        let t = today
+        return (1...n).reversed().compactMap { i in
+            guard let d = cal.date(byAdding: .day, value: -i, to: t) else { return nil }
+            return DayStat(date: d, steps: steps[d] ?? 0, isFuture: false, frozen: frozenDays.contains(d))
+        }
+    }
+
     var bestDay: DayStat? {
         guard let best = steps.max(by: { $0.value < $1.value }), best.value > 0 else { return nil }
         return DayStat(date: best.key, steps: best.value, isFuture: false)
@@ -497,7 +521,7 @@ final class HealthStore: ObservableObject {
 
     /// أسبوع كامل (الأحد إلى السبت). offset = 0 هذا الأسبوع، -1 الأسبوع الماضي
     func week(offset: Int) -> [DayStat] {
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         guard let interval = cal.dateInterval(of: .weekOfYear, for: Date()),
               let start = cal.date(byAdding: .weekOfYear, value: offset, to: interval.start)
         else { return [] }

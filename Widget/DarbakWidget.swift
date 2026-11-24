@@ -36,7 +36,7 @@ struct StepsProvider: TimelineProvider {
         let now = Date()
         let snap = current(at: now)
         var entries = [StepsEntry(date: now, snap: snap)]
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         if let midnight = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: now)) {
             entries.append(StepsEntry(date: midnight, snap: snap.resetting(for: midnight)))
         }
@@ -44,7 +44,7 @@ struct StepsProvider: TimelineProvider {
     }
 
     private func current(at date: Date) -> StepsSnapshot {
-        let today = AppCalendar.riyadh.startOfDay(for: date)
+        let today = AppCalendar.local.startOfDay(for: date)
         guard let s = StepsSnapshot.load() else {
             return StepsSnapshot(day: today, steps: 0, goal: 8_000, distanceKm: 0, kcal: 0,
                                  floors: 0, streak: 0, updated: date)

@@ -62,7 +62,7 @@ struct BadgesView: View {
                 Text("\(Fmt.num(tier.steps)) خطوة")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text(count > 0 ? "حققته \(Fmt.num(count)) مرة" : "ما حققته بعد")
+                Text(count > 0 ? "جبته \(Fmt.num(count)) مرة" : "لسه ما جبته")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(count > 0 ? tier.primary : Palette.text3)
             }
@@ -82,9 +82,7 @@ struct BadgesView: View {
             }
         } label: {
             HStack(spacing: 18) {
-                CrystalBadge.best(size: 120)
-                    .saturation(best == nil ? 0 : 1)
-                    .opacity(best == nil ? 0.4 : 1)
+                CrystalBadge.best(size: 120, earned: best != nil)
                 VStack(alignment: .leading, spacing: 6) {
                     Text("أفضل يوم لك")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
@@ -154,12 +152,12 @@ struct BadgeDetailView: View {
                     CrystalBadge(tier: tier, size: 170, earned: !days.isEmpty)
                         .padding(.top, 34)
 
-                    Text(days.isEmpty ? "ما حققته بعد" : "حققته \(Fmt.num(days.count)) مرة")
+                    Text(days.isEmpty ? "لسه ما جبته" : "جبته \(Fmt.num(days.count)) مرة")
                         .font(.system(size: 24, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("تقدم اليوم")
+                        Text("وين وصلت اليوم")
                             .font(.system(size: 14, design: .rounded))
                             .foregroundStyle(Palette.text2)
                         GeometryReader { g in
@@ -171,7 +169,7 @@ struct BadgeDetailView: View {
                             }
                         }
                         .frame(height: 10)
-                        Text(remaining == 0 ? "حققته اليوم ✓" : "باقي \(Fmt.num(remaining)) خطوة")
+                        Text(remaining == 0 ? "جبته اليوم ✓" : "باقي \(Fmt.num(remaining)) خطوة")
                             .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundStyle(tier.primary)
                     }
@@ -179,7 +177,7 @@ struct BadgeDetailView: View {
                     .glassCard(tint: tier.primary)
 
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("سجل الإنجاز")
+                        Text("الأيام اللي جبته فيها")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .padding(.bottom, 12)

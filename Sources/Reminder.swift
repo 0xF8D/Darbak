@@ -1,6 +1,6 @@
 // دربك — © 0xF8D
 //
-// التذكير المسائي. الإشعار يتجهز مسبقًا، ونحدّث نصه كل ما تتغير الخطوات
+// تذكير الخطوات. الإشعار يتجهز مسبقًا، ونحدّث نصه كل ما تتغير الخطوات
 // (وأنت فاتح التطبيق، أو لما الصحة توقظ التطبيق بالخلفية).
 
 import Foundation
@@ -20,7 +20,7 @@ enum Reminder {
         center.removePendingNotificationRequests(withIdentifiers: [todayID, tomorrowID])
         guard s.reminderEnabled else { return }
 
-        let cal = AppCalendar.riyadh
+        let cal = AppCalendar.local
         let now = Date()
         let todayStart = cal.startOfDay(for: now)
 

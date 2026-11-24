@@ -425,13 +425,17 @@ struct CalculatorSection: View {
                 HStack(spacing: 12) {
                     InputField(title: "الوزن", text: $weight, placeholder: "75", keyboard: .decimalPad, suffix: "كجم")
                     InputField(title: "الطول", text: $height, placeholder: "172", keyboard: .numberPad, suffix: "سم")
+                }
+                HStack(alignment: .bottom, spacing: 12) {
                     InputField(title: "العمر", text: $age, placeholder: "25", keyboard: .numberPad, suffix: "سنة")
+                    Picker("", selection: $male) {
+                        Text("ذكر").tag(true)
+                        Text("أنثى").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 8)
                 }
-                Picker("", selection: $male) {
-                    Text("ذكر").tag(true)
-                    Text("أنثى").tag(false)
-                }
-                .pickerStyle(.segmented)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("نشاطك")
@@ -448,6 +452,9 @@ struct CalculatorSection: View {
                     .padding(.vertical, 4)
                     .padding(.horizontal, 4)
                     .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    Text("لا تحسب المشي اليومي رياضة. لو دوامك مكتبي وتتمرن ٣ أيام، اختر «خفيف».")
+                        .font(.system(size: 11, design: .rounded))
+                        .foregroundStyle(Palette.text3)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -467,11 +474,10 @@ struct CalculatorSection: View {
 
             if let p = current {
                 VStack(spacing: 12) {
-                    resultRow("الحرق الأساسي (BMR)", p.bmr, Palette.text2)
                     resultRow("سعرات الثبات", p.tdee, Palette.cyan)
                     Divider().overlay(Color.white.opacity(0.1))
                     HStack {
-                        Text("هدفك اليومي")
+                        Text("هدفك اليومي (\(p.plan.shortTitle))")
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                         Spacer()
@@ -492,7 +498,7 @@ struct CalculatorSection: View {
                 }
                 .buttonStyle(NeonButtonStyle(colors: [Palette.green, Palette.cyan]))
             } else {
-                emptyHint("عبّ الوزن والطول والعمر عشان نحسب.")
+                emptyHint("اكتب وزنك وطولك وعمرك عشان نحسب لك.")
             }
         }
         .onAppear {

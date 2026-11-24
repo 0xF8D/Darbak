@@ -130,29 +130,55 @@ struct InputField: View {
     var keyboard: UIKeyboardType = .default
     var suffix: String? = nil
 
+    @FocusState private var focused: Bool
+
+    init(title: String, text: Binding<String>, placeholder: String = "",
+         keyboard: UIKeyboardType = .default, suffix: String? = nil) {
+        self.title = title
+        self._text = text
+        self.placeholder = placeholder
+        self.keyboard = keyboard
+        self.suffix = suffix
+    }
+
+    private var isNumber: Bool {
+        keyboard == .numberPad || keyboard == .decimalPad || keyboard == .numbersAndPunctuation
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Palette.text2)
             HStack(spacing: 6) {
+                // حقل الكتابة نخليه يسار-يمين ثابت ونحدد المحاذاة بأنفسنا،
+                // عشان الرقم يطلع وأنت تكتب (الاتجاه العربي المفروض كان يخفي النص وقت الكتابة)
                 TextField(placeholder, text: $text)
                     .keyboardType(keyboard)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .focused($focused)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .tint(Palette.cyan)
+                    .multilineTextAlignment(isNumber ? .center : .trailing)
+                    .autocorrectionDisabled(isNumber)
+                    .frame(maxWidth: .infinity)
+                    .environment(\.layoutDirection, .leftToRight)
                 if let suffix {
                     Text(suffix)
-                        .font(.system(size: 14, design: .rounded))
+                        .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(Palette.text2)
+                        .fixedSize()
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 11)
-            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(focused ? 0.1 : 0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                    .strokeBorder(focused ? Palette.cyan.opacity(0.7) : Color.white.opacity(0.1), lineWidth: 1)
             )
+            .contentShape(Rectangle())
+            .onTapGesture { focused = true }
         }
     }
 }

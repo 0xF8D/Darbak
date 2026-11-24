@@ -87,7 +87,7 @@ struct IngredientEditor: View {
                     Button("إلغاء") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("حفظ") { save() }
+                    Button("احفظ") { save() }
                         .fontWeight(.bold)
                         .disabled(!valid)
                 }
@@ -177,7 +177,7 @@ struct RecipeEditor: View {
                     Button("إلغاء") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("حفظ") { save() }
+                    Button("احفظ") { save() }
                         .fontWeight(.bold)
                         .disabled(!valid)
                 }
@@ -225,14 +225,14 @@ struct RecipeEditor: View {
                     hideKeyboard()
                     addingItem = true
                 } label: {
-                    Label("أضف مكون", systemImage: "plus")
+                    Label("ضيف مكون", systemImage: "plus")
                 }
                 .buttonStyle(SoftButtonStyle(color: Palette.cyan))
             }
             .padding(.bottom, 10)
 
             if recipe.items.isEmpty {
-                Text("ما فيه مكونات. اضغط «أضف مكون».")
+                Text("ما فيه مكونات، اضغط «ضيف مكون».")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Palette.text3)
             } else {
@@ -341,7 +341,7 @@ struct AddItemSheet: View {
                         }
 
                         HStack(spacing: 10) {
-                            InputField(title: "ابحث", text: $search, placeholder: "اسم المكون")
+                            InputField(title: "دوّر", text: $search, placeholder: "اسم المكون")
                             Button {
                                 newIngredient = Ingredient(name: search, unit: .ml, refAmount: 100, refKcal: 0)
                             } label: {
@@ -384,7 +384,7 @@ struct AddItemSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle("أضف مكون")
+            .navigationTitle("ضيف مكون")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -416,7 +416,7 @@ struct AddItemSheet: View {
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .foregroundStyle(Palette.orange)
             }
-            Button("أضف للطبخة") {
+            Button("ضيفه للطبخة") {
                 guard let a = amount else { return }
                 onAdd(RecipeItem(ingredientID: ing.id, name: ing.name, unit: ing.unit,
                                  amount: a, kcalSnapshot: ing.kcal(for: a)))

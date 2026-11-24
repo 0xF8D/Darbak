@@ -5,7 +5,6 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var health: HealthStore
     @EnvironmentObject var settings: AppSettings
-    @EnvironmentObject var walk: WalkMode
 
     @State var selectedDay: DayStat?
     @State var showSettings = false
@@ -38,8 +37,6 @@ struct HomeView: View {
 
                     weekCard(goal: goal)
 
-                    walkButton
-
                     Button {
                         showShare = true
                     } label: {
@@ -50,7 +47,7 @@ struct HomeView: View {
                     if let msg = health.errorMessage, !health.hasAnyData {
                         hint(msg)
                     } else if !health.isLoading && !health.hasAnyData {
-                        hint("ما وصلتني خطوات. روح الإعدادات > الصحة > الوصول للبيانات والأجهزة > دربك وفعّل كل شي.")
+                        hint("ما جتني خطوات. روح الإعدادات > الصحة > الوصول للبيانات والأجهزة > دربك وشغّل كل شي.")
                     }
 
                     Text("© 0xF8D")
@@ -116,28 +113,30 @@ struct HomeView: View {
 
     private var streakChip: some View {
         let on = health.streak > 0
+        let frozen = health.streakFrozen
+        let color = frozen ? Palette.cyan : Palette.orange
         return VStack(spacing: 1) {
             HStack(spacing: 4) {
-                Text("🔥")
+                Text(frozen ? "❄️" : "🔥")
                     .font(.system(size: 18))
                     .saturation(on ? 1 : 0)
                 Text(Fmt.num(health.streak))
                     .font(.system(size: 20, weight: .heavy, design: .rounded))
-                    .foregroundStyle(on ? Palette.orange : Palette.text2)
+                    .foregroundStyle(on ? color : Palette.text2)
                     .contentTransition(.numericText())
             }
-            Text("أطول \(Fmt.num(health.longestStreak))")
+            Text(frozen ? "متجمّد" : "أطول \(Fmt.num(health.longestStreak))")
                 .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(Palette.text2)
+                .foregroundStyle(frozen ? Palette.cyan : Palette.text2)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Palette.orange.opacity(on ? 0.12 : 0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(color.opacity(on ? 0.12 : 0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Palette.orange.opacity(on ? 0.45 : 0.1), lineWidth: 1)
+                .strokeBorder(color.opacity(on ? 0.5 : 0.1), lineWidth: 1)
         )
-        .shadow(color: on ? Palette.orange.opacity(0.35) : .clear, radius: 8)
+        .shadow(color: on ? color.opacity(0.4) : .clear, radius: 8)
     }
 
     // MARK: - Pieces
@@ -159,27 +158,24 @@ struct HomeView: View {
     }
 
     private func weekCard(goal: Int) -> some View {
-        let week = health.week(offset: 0)
-        let t = health.today
+        let days = health.lastDays(6)
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("هذا الأسبوع")
+                Text("آخر ٦ أيام")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Spacer()
-                Text("اضغط على أي يوم")
+                Text("اضغط على اليوم تشوف تفاصيله")
                     .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(Palette.text3)
             }
             HStack(spacing: 0) {
-                ForEach(week) { day in
+                ForEach(days) { day in
                     Button {
-                        if !day.isFuture {
-                            Haptics.tap()
-                            selectedDay = day
-                        }
+                        Haptics.tap()
+                        selectedDay = day
                     } label: {
-                        WeekDayCircle(day: day, goal: goal, isToday: day.date == t)
+                        WeekDayCircle(day: day, goal: goal, isToday: false)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.plain)
@@ -188,52 +184,6 @@ struct HomeView: View {
         }
         .padding(16)
         .glassCard()
-    }
-
-    private var walkButton: some View {
-        Button {
-            Haptics.tap()
-            walk.toggle()
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(walk.isOn ? Palette.green.opacity(0.2) : Palette.cyan.opacity(0.12))
-                    Image(systemName: walk.isOn ? "stop.fill" : "figure.walk.motion")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(walk.isOn ? Palette.green : Palette.cyan)
-                }
-                .frame(width: 46, height: 46)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(walk.isOn ? "وضع المشي شغّال" : "شغّل وضع المشي")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text(walk.isOn ? "خطواتك تتحدث على شاشة القفل · اضغط للإيقاف"
-                                   : "يعرض خطواتك مباشرة على شاشة القفل (يستهلك بطارية)")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundStyle(Palette.text2)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 0)
-                Circle()
-                    .fill(walk.isOn ? Palette.green : Color.white.opacity(0.15))
-                    .frame(width: 10, height: 10)
-                    .shadow(color: walk.isOn ? Palette.green : .clear, radius: 6)
-            }
-            .padding(14)
-            .glassCard(tint: walk.isOn ? Palette.green : Palette.cyan)
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) {
-            if let msg = walk.message {
-                Text(msg)
-                    .font(.system(size: 11, design: .rounded))
-                    .foregroundStyle(Palette.orange)
-                    .offset(y: 22)
-            }
-        }
-        .padding(.bottom, walk.message == nil ? 0 : 18)
     }
 
     private func hint(_ text: String) -> some View {

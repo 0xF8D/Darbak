@@ -40,19 +40,18 @@ enum Palette {
     static let ring: [Color] = [cyan, blue, violet, pink]
 }
 
-// MARK: - الوقت (توقيت السعودية، الأسبوع يبدأ الأحد)
+// MARK: - الوقت (حسب توقيت جوال الشخص، اليوم يبدأ ١٢ الليل)
 
 enum AppCalendar {
-    static let tz = TimeZone(identifier: "Asia/Riyadh")!
-    static let riyadh: Calendar = {
+    static let local: Calendar = {
         var c = Calendar(identifier: .gregorian)
-        c.timeZone = tz
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 1
         c.locale = Locale(identifier: "ar_SA")
         return c
     }()
 
-    static func startOfToday() -> Date { riyadh.startOfDay(for: Date()) }
+    static func startOfToday() -> Date { local.startOfDay(for: Date()) }
 }
 
 // MARK: - تنسيق الأرقام والتواريخ
@@ -92,8 +91,8 @@ enum Fmt {
 
     private static func make(_ format: String) -> DateFormatter {
         let f = DateFormatter()
-        f.calendar = AppCalendar.riyadh
-        f.timeZone = AppCalendar.tz
+        f.calendar = AppCalendar.local
+        f.timeZone = .autoupdatingCurrent
         f.locale = locale
         f.dateFormat = format
         return f
@@ -171,7 +170,7 @@ struct StepsSnapshot: Codable {
 
     /// نسخة فاضية ليوم جديد (نحتفظ بالهدف والستريك)
     func resetting(for day: Date) -> StepsSnapshot {
-        StepsSnapshot(day: AppCalendar.riyadh.startOfDay(for: day), steps: 0, goal: goal,
+        StepsSnapshot(day: AppCalendar.local.startOfDay(for: day), steps: 0, goal: goal,
                       distanceKm: 0, kcal: 0, floors: 0, streak: streak, updated: day)
     }
 }

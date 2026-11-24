@@ -57,16 +57,12 @@ struct StatsView: View {
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
                         stat("المجموع", Fmt.num(total), "خطوة", Palette.cyan)
-                        stat("المتوسط اليومي", Fmt.num(avg), changeText(avg, prevAvg), Palette.blue)
+                        stat("معدلك باليوم", Fmt.num(avg), changeText(avg, prevAvg), Palette.blue)
                         stat("أفضل يوم", Fmt.num(best?.steps ?? 0), best.map { Fmt.weekday($0.date) } ?? "-", Palette.violet)
-                        stat("أيام الهدف", Fmt.num(goalDays), "من \(Fmt.num(past.count)) أيام", Palette.pink)
+                        stat("أيام قفلت الهدف", Fmt.num(goalDays), "من \(Fmt.num(past.count)) أيام", Palette.pink)
                         stat("الستريك 🔥", Fmt.num(health.streak), "يوم متتالي", Palette.orange)
-                        stat("أطول ستريك", Fmt.num(health.longestStreak), "رقمك القياسي", Palette.gold)
+                        stat("أطول ستريك", Fmt.num(health.longestStreak), "أعلى رقم وصلته", Palette.gold)
                     }
-
-                    Text("اليوم الجديد يبدأ ١٢ منتصف الليل بتوقيت السعودية، والأسبوع من الأحد للسبت.")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundStyle(Palette.text3)
                 }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 30)
