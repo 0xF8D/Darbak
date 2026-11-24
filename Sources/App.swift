@@ -34,7 +34,7 @@ struct DarbakApp: App {
                     Reminder.requestAuthorization()
                 }
                 .onReceive(timer) { _ in health.tick() }
-                .onChange(of: phase) { _, new in
+                .onChange(of: phase) { new in
                     if new == .active { health.tick(force: true) }
                     if new == .background {
                         health.pushWidget(force: true)

@@ -34,6 +34,7 @@ struct BadgesView: View {
                     streakCard
                 }
                 .padding(.horizontal, 18)
+                .screenWidth()
                 .padding(.bottom, 30)
             }
         }
@@ -209,6 +210,7 @@ struct BadgeDetailView: View {
                     .glassCard()
                 }
                 .padding(.horizontal, 18)
+                .screenWidth()
                 .padding(.bottom, 30)
             }
         }

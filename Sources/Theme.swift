@@ -44,6 +44,13 @@ extension View {
             )
     }
 
+    /// على الآيباد والشاشات العريضة نخلي المحتوى بعرض مريح بالنص، وعلى الجوالات ياخذ العرض كامل
+    func screenWidth() -> some View {
+        self
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
+    }
+
     /// يمرر كل الكائنات المشتركة والاتجاه العربي (نستخدمه للتطبيق وكل الـ sheets)
     func appEnvironment() -> some View {
         self

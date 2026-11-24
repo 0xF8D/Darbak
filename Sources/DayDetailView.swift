@@ -85,6 +85,7 @@ struct DayDetailView: View {
                     .glassCard()
                 }
                 .padding(.horizontal, 18)
+                .screenWidth()
                 .padding(.bottom, 30)
             }
         }

@@ -54,6 +54,7 @@ struct SettingsView: View {
                         about
                     }
                     .padding(.horizontal, 18)
+                    .screenWidth()
                     .padding(.vertical, 12)
                 }
             }

@@ -56,6 +56,7 @@ struct HomeView: View {
                         .padding(.top, 4)
                 }
                 .padding(.horizontal, 18)
+                .screenWidth()
                 .padding(.bottom, 30)
             }
         }
@@ -94,6 +95,8 @@ struct HomeView: View {
                 Text(Fmt.longDate(health.now))
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Palette.text2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
             Spacer()
             streakChip

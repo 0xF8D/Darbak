@@ -16,7 +16,7 @@
           "date": "2026-11-24",
           "downloadURL": "https://github.com/USERNAME/REPO/releases/download/latest/Darbak.ipa",
           "size": 3000000,
-          "minOSVersion": "17.0"
+          "minOSVersion": "16.2"
         }
       ]
     }

@@ -65,6 +65,7 @@ struct StatsView: View {
                     }
                 }
                 .padding(.horizontal, 18)
+                .screenWidth()
                 .padding(.bottom, 30)
             }
         }

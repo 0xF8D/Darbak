@@ -122,8 +122,8 @@ struct StepRing: View {
                 .shadow(color: Palette.blue.opacity(0.6), radius: 12)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-                .contentTransition(.numericText(value: Double(steps)))
-                .animation(.snappy, value: steps)
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.35, dampingFraction: 0.85), value: steps)
 
             Text("من \(Fmt.num(goal)) خطوة")
                 .font(.system(size: size * 0.048, weight: .semibold, design: .rounded))

@@ -73,19 +73,39 @@ struct StepsWidgetView: View {
     private var s: StepsSnapshot { entry.snap }
     private var tier: BadgeTier? { BadgeTier.highest(for: s.steps) }
 
+    private var isAccessory: Bool {
+        family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline
+    }
+
     var body: some View {
-        content
-            .environment(\.layoutDirection, .rightToLeft)
-            .containerBackground(for: .widget) {
-                ZStack {
-                    LinearGradient(colors: [Palette.bgTop, Palette.bgBottom], startPoint: .top, endPoint: .bottom)
-                    Circle()
-                        .fill(Palette.violet.opacity(0.3))
-                        .frame(width: 160, height: 160)
-                        .blur(radius: 50)
-                        .offset(x: 60, y: -60)
-                }
+        if #available(iOS 17.0, *) {
+            content
+                .environment(\.layoutDirection, .rightToLeft)
+                .containerBackground(for: .widget) { background }
+        } else if isAccessory {
+            // iOS 16: ويدجت شاشة القفل بدون خلفية
+            content
+                .environment(\.layoutDirection, .rightToLeft)
+        } else {
+            // iOS 16: نرسم الخلفية بأنفسنا ونضيف هوامش
+            ZStack {
+                background
+                content
+                    .padding(14)
             }
+            .environment(\.layoutDirection, .rightToLeft)
+        }
+    }
+
+    private var background: some View {
+        ZStack {
+            LinearGradient(colors: [Palette.bgTop, Palette.bgBottom], startPoint: .top, endPoint: .bottom)
+            Circle()
+                .fill(Palette.violet.opacity(0.3))
+                .frame(width: 160, height: 160)
+                .blur(radius: 50)
+                .offset(x: 60, y: -60)
+        }
     }
 
     @ViewBuilder

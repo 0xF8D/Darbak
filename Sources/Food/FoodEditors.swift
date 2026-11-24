@@ -77,6 +77,7 @@ struct IngredientEditor: View {
                         }
                     }
                     .padding(18)
+                    .screenWidth()
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -167,6 +168,7 @@ struct RecipeEditor: View {
                         totalsCard(total)
                     }
                     .padding(18)
+                    .screenWidth()
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -187,7 +189,7 @@ struct RecipeEditor: View {
                 }
             }
         }
-        .onChange(of: recipe.kind) { _, new in
+        .onChange(of: recipe.kind) { new in
             if new == .batch && recipe.meals == 1 && recipe.days == 1 {
                 recipe.days = 3
                 recipe.meals = 6
@@ -381,6 +383,7 @@ struct AddItemSheet: View {
                         }
                     }
                     .padding(18)
+                    .screenWidth()
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
@@ -459,6 +462,7 @@ struct QuickAddSheet: View {
                     Spacer()
                 }
                 .padding(18)
+                .screenWidth()
             }
             .navigationTitle("سجّل سعرات")
             .navigationBarTitleDisplayMode(.inline)

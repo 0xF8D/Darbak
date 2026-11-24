@@ -44,6 +44,7 @@ struct CaloriesView: View {
                         }
                     }
                     .padding(.horizontal, 18)
+                    .screenWidth()
                     .padding(.bottom, 30)
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -513,7 +514,7 @@ struct CalculatorSection: View {
                 plan = p.plan
             }
         }
-        .onChange(of: current) { _, _ in saved = false }
+        .onChange(of: current) { _ in saved = false }
     }
 
     private func resultRow(_ title: String, _ value: Double, _ color: Color) -> some View {
