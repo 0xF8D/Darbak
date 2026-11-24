@@ -20,6 +20,8 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     header
 
+                    HealthAccessBanner()
+
                     StepRing(steps: steps, goal: goal)
                         .frame(maxWidth: 290)
                         .padding(.top, 30)
@@ -47,7 +49,7 @@ struct HomeView: View {
                     if let msg = health.errorMessage, !health.hasAnyData {
                         hint(msg)
                     } else if !health.isLoading && !health.hasAnyData {
-                        hint("ما جتني خطوات. روح الإعدادات > الصحة > الوصول للبيانات والأجهزة > دربك وشغّل كل شي.")
+                        hint("ما جتني خطوات. افتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغّل «الكل».")
                     }
 
                     Text("© 0xF8D")

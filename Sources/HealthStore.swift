@@ -20,6 +20,15 @@ struct DayStat: Identifiable {
     var id: Date { date }
 }
 
+/// حالة وصول التطبيق لبيانات الصحة
+enum HealthAccess {
+    case checking
+    case ok
+    case unavailable   // الجهاز ما فيه الصحة (مثل بعض الآيبادات)
+    case blocked       // برنامج التثبيت شال صلاحية الصحة من التطبيق
+    case noHistory     // الصحة ما رجعت أي شي (غالبًا الإذن مقفل) والجوال عنده خطوات
+}
+
 struct DayExtras {
     var distanceKm: Double
     var kcal: Int
@@ -33,6 +42,7 @@ final class HealthStore: ObservableObject {
     @Published private(set) var now = Date()
     @Published private(set) var isLoading = true
     @Published private(set) var errorMessage: String?
+    @Published private(set) var access: HealthAccess = .checking
     @Published private(set) var streak = 0
     @Published private(set) var longestStreak = 0
     @Published private(set) var frozenDays: Set<Date> = []
@@ -56,6 +66,8 @@ final class HealthStore: ObservableObject {
     private var activeDay = Date.distantPast
     private var collectionQuery: HKStatisticsCollectionQuery?
     private var healthReady = false
+    private var hkAnswered = false
+    private var authFailed = false
     private var observerStarted = false
     private var started = false
     private var lastExtras = Date.distantPast
@@ -98,22 +110,55 @@ final class HealthStore: ObservableObject {
 
         guard HKHealthStore.isHealthDataAvailable() else {
             isLoading = false
+            access = .unavailable
             recompute()
             return
         }
+        requestHealth()
+    }
+
+    private func requestHealth() {
         store.requestAuthorization(toShare: [], read: readTypes) { [weak self] _, error in
             DispatchQueue.main.async {
                 guard let self else { return }
                 if let error {
                     self.errorMessage = error.localizedDescription
+                    self.authFailed = true
                     self.isLoading = false
+                } else {
+                    self.authFailed = false
                 }
                 self.healthReady = true
                 self.startQuery()
                 self.startObserver()
                 self.refreshExtras()
+                self.updateAccess()
             }
         }
+    }
+
+    /// زر «جرّب مرة ثانية»: يطلب الإذن من جديد ويعيد قراءة السجل كامل
+    func retryHealth() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        hkAnswered = false
+        access = .checking
+        requestHealth()
+    }
+
+    private func updateAccess() {
+        let new: HealthAccess
+        if !HKHealthStore.isHealthDataAvailable() {
+            new = .unavailable
+        } else if authFailed {
+            new = .blocked
+        } else if !hkAnswered {
+            new = .checking
+        } else if hkSteps.isEmpty && (pedSteps.values.contains { $0 > 0 } || liveSteps > 0) {
+            new = .noHistory
+        } else {
+            new = .ok
+        }
+        if new != access { access = new }
     }
 
     /// يستدعى كل ٥ ثواني وعند فتح التطبيق
@@ -139,6 +184,10 @@ final class HealthStore: ObservableObject {
         }
         if force || Date().timeIntervalSince(lastExtras) > 30 {
             refreshExtras()
+        }
+        // رجع للتطبيق (يمكن فعّل الإذن من الصحة): نعيد قراءة السجل
+        if force && healthReady && (access == .noHistory || access == .blocked) {
+            retryHealth()
         }
         if force { recompute() }
         pushWidget(force: force)
@@ -196,6 +245,7 @@ final class HealthStore: ObservableObject {
             } else if let message {
                 self.errorMessage = message
             }
+            self.hkAnswered = true
             self.isLoading = false
             self.streakKey = ""
             self.recompute()
@@ -355,6 +405,7 @@ final class HealthStore: ObservableObject {
             m[t] = liveSteps
         }
         if m != steps { steps = m }
+        updateAccess()
 
         updateStreaksIfNeeded()
         checkMilestones()

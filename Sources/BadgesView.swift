@@ -23,6 +23,8 @@ struct BadgesView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     ScreenTitle(title: "الدروع", subtitle: "كل يوم توصل فيه الرقم ينحسب لك درع")
 
+                    HealthAccessBanner()
+
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(BadgeTier.all) { tier in
                             badgeCard(tier)
