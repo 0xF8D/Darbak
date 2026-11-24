@@ -1,0 +1,88 @@
+name: Darbak
+options:
+  bundleIdPrefix: com.f8d
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "2.0"
+    CURRENT_PROJECT_VERSION: "2"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  Darbak:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - Shared
+    dependencies:
+      - target: DarbakWidget
+        embed: true
+    settings:
+      base:
+        PRODUCT_NAME: Darbak
+        PRODUCT_MODULE_NAME: Darbak
+        PRODUCT_BUNDLE_IDENTIFIER: com.f8d.steps
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: "دربك"
+        CFBundleDevelopmentRegion: ar
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSSupportsLiveActivities: true
+        UIBackgroundModes:
+          - location
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.f8d.steps.refresh
+        NSHealthShareUsageDescription: "دربك يقرأ خطواتك ومسافتك وسعراتك والطوابق من الصحة (الجوال والساعة) عشان يحسب دروعك وسجلك."
+        NSMotionUsageDescription: "دربك يستخدم عداد خطوات الجوال عشان يحدّث خطواتك مباشرة وأنت تمشي."
+        NSLocationWhenInUseUsageDescription: "الموقع يُستخدم بس لما تشغّل «وضع المشي» عشان يبقى التطبيق شغّال بالخلفية ويحدّث خطواتك على شاشة القفل. ما نحفظ موقعك."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "الموقع يُستخدم بس لما تشغّل «وضع المشي» عشان يبقى التطبيق شغّال بالخلفية ويحدّث خطواتك على شاشة القفل. ما نحفظ موقعك."
+    entitlements:
+      path: Config/Darbak.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
+        com.apple.security.application-groups:
+          - group.com.f8d.steps
+
+  DarbakWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widget
+      - Shared
+    settings:
+      base:
+        PRODUCT_NAME: DarbakWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.f8d.steps.widget
+        SKIP_INSTALL: YES
+    info:
+      path: Config/Widget-Info.plist
+      properties:
+        CFBundleDisplayName: "دربك"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Config/DarbakWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.f8d.steps
+
+schemes:
+  Darbak:
+    build:
+      targets:
+        Darbak: all
+        DarbakWidget: all
