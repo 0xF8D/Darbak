@@ -85,6 +85,24 @@ https://raw.githubusercontent.com/0xF8D/steps/main/apps.json
 
 ---
 
+## English
+
+**Darbak** is a step counter for iPhone & iPad (iOS 16.2+): levels, challenges, and competing with your friends.
+
+- 👟 **Live steps** that match Apple Health (iPhone + Apple Watch)
+- ⭐ **XP levels**: earn points from your steps, from *Beginner* to *Legend*
+- 🏁 **Challenges**: 3 weekly + 3 monthly, adapted to your average
+- 👥 **Friends**: weekly leaderboard by sharing a code, no server, no account
+- 📱 **Widgets**, Live Activity, reminders, and a calorie tracker
+
+**Install:** download [Darbak.ipa](https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa) and sideload it (AltStore, Sideloadly, …).
+**Privacy:** everything stays on your device.
+**Build:** SwiftUI + XcodeGen, built by GitHub Actions on every push to `main`.
+
+Made by **0xF8D** · 🇸🇦 Saudi Made
+
+---
+
 <div align="center">
 
 © 2026 0xF8D · جميع الحقوق محفوظة · 🇸🇦 Saudi Made
