@@ -50,11 +50,8 @@ jobs:
           echo "Version: $VERSION"
 
           # نسخة مرقمة (v2.1، v2.2 ...) بملاحظات الإصدار
-          if gh release view "v$VERSION" > /dev/null 2>&1; then
-            gh release upload "v$VERSION" Darbak.ipa --clobber
-          else
-            gh release create "v$VERSION" Darbak.ipa --title "دربك v$VERSION" --notes-file RELEASE_NOTES.md --latest=false
-          fi
+          gh release delete "v$VERSION" --cleanup-tag -y || true
+          gh release create "v$VERSION" Darbak.ipa --title "دربك v$VERSION" --notes-file RELEASE_NOTES.md --latest=false
 
           # «latest»: نفس رابط التحميل الثابت دايمًا
           gh release delete latest --cleanup-tag -y || true
