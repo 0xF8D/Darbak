@@ -225,17 +225,31 @@ struct SoftButtonStyle: ButtonStyle {
     }
 }
 
-/// توقيع التطبيق تحت الصفحات: © 0xF8D وتحته «صناعة سعودية»
-struct SaudiMadeFooter: View {
+/// شارة «Saudi Made» الذهبية (بصفحة الإعدادات)
+struct SaudiMadeBadge: View {
     var body: some View {
-        VStack(spacing: 3) {
-            Text("© 0xF8D")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(Palette.text3)
-            Text("صناعة سعودية 🇸🇦")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .foregroundStyle(Palette.green.opacity(0.85))
+        HStack(spacing: 8) {
+            Text("🇸🇦")
+                .font(.system(size: 16))
+            Text("Saudi Made")
+                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .tracking(1.2)
+                .foregroundStyle(LinearGradient(colors: [Palette.goldLight, Palette.gold, Palette.goldDeep],
+                                                startPoint: .top, endPoint: .bottom))
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule().fill(LinearGradient(colors: [Palette.gold.opacity(0.16), Palette.goldDeep.opacity(0.06)],
+                                          startPoint: .top, endPoint: .bottom))
+        )
+        .overlay(
+            Capsule().strokeBorder(LinearGradient(colors: [Palette.goldLight.opacity(0.9), Palette.goldDeep.opacity(0.4)],
+                                                  startPoint: .topLeading, endPoint: .bottomTrailing),
+                                   lineWidth: 1)
+        )
+        .shadow(color: Palette.gold.opacity(0.35), radius: 10)
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 
