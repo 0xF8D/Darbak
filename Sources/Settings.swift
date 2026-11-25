@@ -39,6 +39,8 @@ final class AppSettings: ObservableObject {
 struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var walk: WalkMode
+    @EnvironmentObject var health: HealthStore
+    @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -48,6 +50,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         goalCard
+                        healthCard
                         toggles
                         reminderCard
                         walkCard
@@ -173,6 +176,68 @@ struct SettingsView: View {
         }
         .padding(16)
         .glassCard()
+    }
+
+    /// حالة الربط مع «صحتي»: لو مو مربوط يقرأ آخر ٧ أيام بس من عداد الجوال
+    private var healthCard: some View {
+        let s = healthStatus
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: s.icon)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(s.color)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(s.title)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(s.detail)
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(Palette.text2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if health.access == .noHistory || health.access == .blocked {
+                HStack(spacing: 8) {
+                    if health.access == .noHistory {
+                        Button {
+                            if let url = URL(string: "x-apple-health://") { openURL(url) }
+                        } label: {
+                            Label("افتح الصحة", systemImage: "heart.fill")
+                        }
+                        .buttonStyle(SoftButtonStyle(color: Palette.pink))
+                    }
+                    Button {
+                        Haptics.tap()
+                        health.retryHealth()
+                    } label: {
+                        Label("جرب مرة ثانية", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(SoftButtonStyle(color: Palette.cyan))
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(tint: s.color)
+    }
+
+    private var healthStatus: (icon: String, color: Color, title: String, detail: String) {
+        switch health.access {
+        case .ok:
+            return ("heart.text.square.fill", Palette.green, "مربوط بالصحة ✓",
+                    "يقرأ كل سجلك من الجوال والساعة.")
+        case .checking:
+            return ("hourglass", Palette.text2, "يتحقق من الصحة…", "لحظات.")
+        case .noHistory:
+            return ("exclamationmark.triangle.fill", Palette.orange, "الصحة مو مربوطة",
+                    "يقرأ آخر ٧ أيام بس من عداد الجوال، فمستواك ودروعك القديمة ما تنحسب.\nالحل: افتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغل «الكل».")
+        case .blocked:
+            return ("xmark.shield.fill", Palette.pink, "الصحة مقفلة على التطبيق",
+                    "البرنامج اللي ثبت فيه دربك شال صلاحية الصحة، فيقرأ آخر ٧ أيام بس.\nالحل: ثبته ببرنامج أو شهادة تدعم الصحة (HealthKit).")
+        case .unavailable:
+            return ("iphone.slash", Palette.text2, "الجهاز ما يدعم الصحة",
+                    "يقرأ من عداد الجوال بس.")
+        }
     }
 
     private var about: some View {

@@ -130,6 +130,7 @@ final class FriendStore: ObservableObject {
     private var dirty = true
     private var lastPush = Date.distantPast
     private var nameWork: DispatchWorkItem?
+    private var bgTask: UIBackgroundTaskIdentifier = .invalid
 
     init() {
         name = d.string(forKey: "profileName") ?? ""
@@ -213,6 +214,25 @@ final class FriendStore: ObservableObject {
             await MainActor.run { self.offline = isOffline }
         }
         await MainActor.run { self.syncing = false }
+    }
+
+    /// التطبيق انقفل: نرسل آخر خطواتك قبل ما iOS يوقفه (ياخذ ثواني)
+    func syncOnClose() {
+        guard Cloud.isConfigured, hasName else { return }
+        endBackgroundTask()
+        bgTask = UIApplication.shared.beginBackgroundTask(withName: "darbak.sync") { [weak self] in
+            self?.endBackgroundTask()
+        }
+        Task {
+            await self.sync(force: true)
+            await MainActor.run { self.endBackgroundTask() }
+        }
+    }
+
+    private func endBackgroundTask() {
+        guard bgTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(bgTask)
+        bgTask = .invalid
     }
 
     private func refreshGroups() async throws {

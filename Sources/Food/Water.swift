@@ -8,15 +8,13 @@ import SwiftUI
 final class WaterStore: ObservableObject {
     static let shared = WaterStore()
 
-    static let goals = [2_000, 2_500, 3_000, 3_500]
+    static let goals = [2_000, 2_500, 3_000, 3_500, 4_000]
     struct Quick: Identifiable {
         let ml: Int
-        let title: String
         var id: Int { ml }
     }
 
-    static let quick = [Quick(ml: 150, title: "فنجان"), Quick(ml: 250, title: "كوب"),
-                        Quick(ml: 330, title: "علبة"), Quick(ml: 500, title: "قارورة")]
+    static let quick = [Quick(ml: 150), Quick(ml: 250), Quick(ml: 330), Quick(ml: 500)]
 
     struct DayTotal: Identifiable {
         let date: Date
@@ -50,6 +48,12 @@ final class WaterStore: ObservableObject {
     }
 
     var total: Int { entries.reduce(0) { $0 + $1.ml } }
+
+    /// هدف تكتبه بنفسك (بين ٥٠٠ و ١٠٬٠٠٠ مل)
+    func setGoal(_ ml: Int) {
+        goal = min(max(ml, 500), 10_000)
+        Haptics.tap()
+    }
     var progress: Double { min(Double(total) / Double(max(goal, 1)), 1) }
     var remaining: Int { max(goal - total, 0) }
 
@@ -120,6 +124,7 @@ final class WaterStore: ObservableObject {
 struct WaterSection: View {
     @ObservedObject var water = WaterStore.shared
     @State private var custom = ""
+    @State private var customGoal = ""
 
     private let blue = [Palette.cyan, Palette.blue]
 
@@ -200,7 +205,7 @@ struct WaterSection: View {
                             Text("\(Fmt.num(q.ml))")
                                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                                 .foregroundStyle(.white)
-                            Text(q.title)
+                            Text("مل")
                                 .font(.system(size: 11, design: .rounded))
                                 .foregroundStyle(Palette.text2)
                         }
@@ -339,7 +344,7 @@ struct WaterSection: View {
             Label("هدفك اليومي", systemImage: "target")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 ForEach(WaterStore.goals, id: \.self) { g in
                     let on = water.goal == g
                     Button {
@@ -348,7 +353,9 @@ struct WaterSection: View {
                     } label: {
                         VStack(spacing: 2) {
                             Text(Fmt.dec(Double(g) / 1000))
-                                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                             Text("لتر")
                                 .font(.system(size: 11, design: .rounded))
                         }
@@ -363,6 +370,25 @@ struct WaterSection: View {
                     }
                     .buttonStyle(.plain)
                 }
+            }
+            HStack(alignment: .bottom, spacing: 8) {
+                InputField(title: "أو اكتب هدفك", text: $customGoal,
+                           placeholder: "مثلا ٢٨٠٠", keyboard: .numberPad, suffix: "مل")
+                Button("حفظ") {
+                    if let v = Num.parse(customGoal) {
+                        water.setGoal(Int(v.rounded()))
+                    }
+                    customGoal = ""
+                    hideKeyboard()
+                }
+                .buttonStyle(SoftButtonStyle(color: Palette.cyan))
+                .disabled(Num.parse(customGoal) == nil)
+                .padding(.bottom, 6)
+            }
+            if !WaterStore.goals.contains(water.goal) {
+                Text("هدفك الحين: \(Fmt.num(water.goal)) مل")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Palette.cyan)
             }
         }
         .padding(16)

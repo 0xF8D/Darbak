@@ -53,6 +53,7 @@ struct DarbakApp: App {
                     }
                     if new == .background {
                         health.pushWidget(force: true)
+                        friends.syncOnClose()
                         BackgroundRefresh.schedule()
                     }
                 }
