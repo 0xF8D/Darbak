@@ -134,7 +134,7 @@ final class FriendStore: ObservableObject {
     func shareText() -> String {
         let me = myCard()
         return """
-        👟 تحداني في دربك!
+        يا شباب تحدوني في دربك 👑
         \(me.emoji) \(me.name): \(Fmt.num(me.total)) خطوة هذا الأسبوع · مستوى \(Fmt.num(me.level))
 
         عشان تضيفني: انسخ الرسالة كاملة، وافتح دربك ← الشلة ← اضغط «لصق».
@@ -325,7 +325,8 @@ struct FriendsView: View {
             .padding(.bottom, 6)
 
             ForEach(Array(board.enumerated()), id: \.element.id) { i, c in
-                row(c, place: i + 1, leader: leader, isMe: c.id == friends.myID)
+                row(c, place: i + 1, leader: leader, isMe: c.id == friends.myID,
+                    king: i == 0 && board.count > 1 && c.total > 0)
                 if i < board.count - 1 {
                     Divider().overlay(Color.white.opacity(0.08))
                 }
@@ -356,7 +357,7 @@ struct FriendsView: View {
         }
     }
 
-    private func row(_ c: FriendCard, place: Int, leader: Int, isMe: Bool) -> some View {
+    private func row(_ c: FriendCard, place: Int, leader: Int, isMe: Bool, king: Bool) -> some View {
         let frac = min(Double(c.total) / Double(max(leader, 1)), 1)
         let colors = isMe ? [Palette.cyan, Palette.blue] : Rank.of(level: c.level).colors
         return HStack(spacing: 10) {
@@ -374,6 +375,11 @@ struct FriendsView: View {
                         .lineLimit(1)
                     Text("⭐\(Fmt.num(c.level))")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(Palette.gold)
+                }
+                if king {
+                    Text("ملك القروب 👑")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(Palette.gold)
                 }
                 GeometryReader { g in
@@ -415,7 +421,7 @@ struct FriendsView: View {
     private var actions: some View {
         VStack(spacing: 12) {
             ShareLink(item: friends.shareText()) {
-                Label("أرسل كودي لشلتي", systemImage: "square.and.arrow.up")
+                Label("أرسل كودي للقروب", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(NeonButtonStyle(colors: [Palette.violet, Palette.pink]))
 
@@ -492,7 +498,7 @@ struct FriendsView: View {
             Label("كيف تشتغل؟", systemImage: "questionmark.circle")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text("١. اضغط «أرسل كودي لشلتي» وأرسله بالقروب.\n٢. لما يرسل صديقك كوده: انسخ رسالته وارجع هنا واضغط «لصق».\n٣. الترتيب يتحدث كل ما أحد يرسل كود جديد، فأرسلوا أكوادكم كل يوم أو آخر الأسبوع.")
+            Text("١. اضغط «أرسل كودي للقروب» وأرسله بالقروب.\n٢. لما يرسل صديقك كوده: انسخ رسالته وارجع هنا واضغط «لصق».\n٣. الترتيب يتحدث كل ما أحد يرسل كود جديد، فأرسلوا أكوادكم كل يوم أو آخر الأسبوع.")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text2)
                 .fixedSize(horizontal: false, vertical: true)

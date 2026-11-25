@@ -31,10 +31,11 @@ enum Reminder {
                 body: "باقيلك \(Fmt.num(goal - steps)) خطوة على هدفك يا وحش 💪")
         }
 
+        // صباح بكرة ٨:٣٠: تذكير بهدف اليوم
         if let tomorrow = cal.date(byAdding: .day, value: 1, to: todayStart),
-           let fire = cal.date(bySettingHour: s.reminderHour, minute: s.reminderMinute, second: 0, of: tomorrow) {
+           let fire = cal.date(bySettingHour: 8, minute: 30, second: 0, of: tomorrow) {
             add(id: tomorrowID, at: fire,
-                body: "لا تنسى هدفك اليوم \(Fmt.num(goal)) خطوة يا وحش 🔥 افتح دربك وشوف كم باقي لك")
+                body: "صباح الخير! هدفك اليوم \(Progression.k(goal)) خطوة، لا تنساه 🔥")
         }
     }
 

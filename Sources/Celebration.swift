@@ -53,8 +53,11 @@ struct CelebrationView: View {
 
                 VStack(spacing: 6) {
                     Text(event.title)
-                        .font(.system(size: 32, weight: .heavy, design: .rounded))
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .padding(.horizontal, 20)
                         .shadow(color: primary, radius: 12)
                     Text(event.subtitle)
                         .font(.system(size: 17, weight: .semibold, design: .rounded))

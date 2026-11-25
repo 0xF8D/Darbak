@@ -78,7 +78,7 @@ struct RootView: View {
                 .tabItem { Label("خطواتي", systemImage: "figure.walk") }
                 .tag(AppTab.home)
             BadgesView()
-                .tabItem { Label("التقدم", systemImage: "star.circle.fill") }
+                .tabItem { Label("إنجازاتي", systemImage: "star.circle.fill") }
                 .tag(AppTab.progress)
             FriendsView()
                 .tabItem { Label("الشلة", systemImage: "person.3.fill") }
@@ -87,7 +87,7 @@ struct RootView: View {
                 .tabItem { Label("السعرات", systemImage: "fork.knife") }
                 .tag(AppTab.calories)
             StatsView()
-                .tabItem { Label("إحصائيات", systemImage: "chart.bar.fill") }
+                .tabItem { Label("أرقامي", systemImage: "chart.bar.fill") }
                 .tag(AppTab.stats)
         }
         .tint(Palette.cyan)
