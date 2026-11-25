@@ -60,7 +60,7 @@ struct StatsView: View {
                         stat("معدلك باليوم", Fmt.num(avg), changeText(avg, prevAvg), Palette.blue)
                         stat("أفضل يوم", Fmt.num(best?.steps ?? 0), best.map { Fmt.weekday($0.date) } ?? "-", Palette.violet)
                         stat("أيام قفلت الهدف", Fmt.num(goalDays), "من \(Fmt.num(past.count)) أيام", Palette.pink)
-                        stat("مستواك ⭐", Fmt.num(health.progress.level.level), health.progress.level.rank.title, Palette.gold)
+                        stat("مستواك", Fmt.num(health.progress.level.level), health.progress.level.rank.title, Palette.gold)
                         stat("نقاطك", Fmt.num(health.progress.level.xp), "XP", Palette.orange)
                     }
                 }

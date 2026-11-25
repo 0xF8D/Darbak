@@ -30,6 +30,8 @@ struct BadgesView: View {
 
                     LevelCard(level: health.progress.level, todayXP: health.progress.todayXP)
 
+                    RanksCard(level: health.progress.level.level)
+
                     ChallengesCard(title: "تحديات الأسبوع", challenges: health.progress.week,
                                    ends: health.progress.weekEnd, tint: Palette.cyan)
 
@@ -135,10 +137,10 @@ struct BadgesView: View {
             Label("كيف تجمع XP؟", systemImage: "sparkles")
                 .font(.system(size: 15, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            rule("👟", "كل ١٠٠ خطوة", "+١ XP")
-            rule("💎", "كل درع تجيبه باليوم", "+٢٥ XP")
-            rule("🏁", "تحدي أسبوعي", "+١٥٠ XP")
-            rule("🏆", "تحدي شهري", "+٤٠٠ XP")
+            rule("figure.walk", "كل ١٠٠ خطوة", "+١ XP")
+            rule("hexagon.fill", "كل درع تجيبه باليوم", "+٢٥ XP")
+            rule("flag.checkered", "تحدي أسبوعي", "+١٥٠ XP")
+            rule("trophy.fill", "تحدي شهري", "+٤٠٠ XP")
             Text("كل شي يتحسب من سجل خطواتك، فمستواك يشمل أيامك القديمة بعد.")
                 .font(.system(size: 11, design: .rounded))
                 .foregroundStyle(Palette.text3)
@@ -150,8 +152,12 @@ struct BadgesView: View {
     }
 
     private func rule(_ icon: String, _ title: String, _ xp: String) -> some View {
-        HStack {
-            Text("\(icon)  \(title)")
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Palette.cyan)
+                .frame(width: 18)
+            Text(title)
                 .font(.system(size: 13, design: .rounded))
                 .foregroundStyle(Palette.text2)
             Spacer()
@@ -159,6 +165,62 @@ struct BadgesView: View {
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundStyle(Palette.gold)
         }
+    }
+}
+
+// MARK: - المستويات (الرتب)
+
+struct RanksCard: View {
+    let level: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("المستويات")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.bottom, 4)
+            ForEach(Rank.all) { r in
+                let current = r.contains(level)
+                let passed = level > r.to
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(r.gradient)
+                        .frame(width: 12, height: 12)
+                        .opacity(current || passed ? 1 : 0.35)
+                    Text(r.title)
+                        .font(.system(size: 15, weight: current ? .heavy : .semibold, design: .rounded))
+                        .foregroundStyle(current ? Color.white : (passed ? Palette.text2 : Palette.text3))
+                    if current {
+                        Text("أنت هنا")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(r.primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(r.primary.opacity(0.15), in: Capsule())
+                    } else if passed {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Palette.green)
+                    }
+                    Spacer()
+                    Text("من \(Fmt.num(r.from)) إلى \(Fmt.num(r.to))")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(current ? Palette.text2 : Palette.text3)
+                }
+                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(current ? r.primary.opacity(0.12) : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(current ? r.primary.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+            }
+        }
+        .padding(16)
+        .glassCard()
     }
 }
 
@@ -202,7 +264,8 @@ struct LevelCard: View {
                 }
                 .frame(height: 10)
                 HStack {
-                    Text("باقي \(Fmt.num(level.remaining)) XP للمستوى \(Fmt.num(level.level + 1))")
+                    Text(level.isMax ? "وصلت أعلى مستوى"
+                                     : "باقي \(Fmt.num(level.remaining)) XP للمستوى \(Fmt.num(level.level + 1))")
                     Spacer()
                     Text("اليوم +\(Fmt.num(todayXP))")
                         .foregroundStyle(Palette.green)
