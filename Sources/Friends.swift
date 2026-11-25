@@ -77,7 +77,7 @@ struct FriendCard: Codable, Identifiable, Equatable {
 final class FriendStore: ObservableObject {
     static let shared = FriendStore()
 
-    static let emojis = ["🦁", "🐺", "🦅", "🐆", "🐎", "🐪", "🔥", "⚡️", "🚀", "👟", "🏃", "💪", "😎", "👑", "🌙", "⭐️"]
+    static let emojis = ["⭐️", "🚀", "🦁", "🦅", "🐎", "👑", "🏃", "👧", "👦", "💪"]
 
     private let d = UserDefaults.standard
     private let friendsKey = "friends"
@@ -85,7 +85,7 @@ final class FriendStore: ObservableObject {
     @Published var name: String { didSet { d.set(name, forKey: "profileName") } }
     @Published var emoji: String { didSet { d.set(emoji, forKey: "profileEmoji") } }
     @Published private(set) var friends: [FriendCard] = []
-    /// يزيد كل ما انضاف/تحدّث صديق (عشان ننقلك لصفحة الربع)
+    /// يزيد كل ما انضاف/تحدث صديق (عشان ننقلك لصفحة الربع)
     @Published private(set) var importTick = 0
     @Published var toast: String?
 
@@ -134,10 +134,10 @@ final class FriendStore: ObservableObject {
     func shareText() -> String {
         let me = myCard()
         return """
-        👟 تحدّاني في دربك!
-        \(me.emoji) \(me.name): \(Fmt.num(me.total)) خطوة هالأسبوع · مستوى \(Fmt.num(me.level))
+        👟 تحداني في دربك!
+        \(me.emoji) \(me.name): \(Fmt.num(me.total)) خطوة هذا الأسبوع · مستوى \(Fmt.num(me.level))
 
-        عشان تضيفني: انسخ هالرسالة كاملة، وافتح دربك ← الربع ← «الصق كود صديق».
+        عشان تضيفني: انسخ الرسالة كاملة، وافتح دربك ← الربع ← اضغط «لصق».
         \(me.link)
         """
     }
@@ -145,7 +145,7 @@ final class FriendStore: ObservableObject {
     func importText(_ text: String) {
         defer { importTick += 1 }
         guard let card = FriendCard.decode(text) else {
-            show("ما لقيت كود صحيح. انسخ رسالة صديقك كاملة وجرّب مرة ثانية.")
+            show("ما لقيت كود صحيح. انسخ رسالة صديقك كاملة وجرب مرة ثانية.")
             return
         }
         if card.id == myID {
@@ -159,7 +159,7 @@ final class FriendStore: ObservableObject {
             }
             friends[i] = card
             save()
-            show("تحدّثت خطوات \(card.emoji) \(card.name) ✓")
+            show("تحدثت خطوات \(card.emoji) \(card.name) ✓")
         } else {
             friends.append(card)
             save()
@@ -241,22 +241,22 @@ struct FriendsView: View {
 
     private var profileEditor: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("عرّف بنفسك")
+            Text("عرف بنفسك")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            InputField(title: "اسمك (يطلع لربعك)", text: $friends.name, placeholder: "مثلاً: أبو فهد")
+            InputField(title: "اسمك (يطلع لربعك)", text: $friends.name, placeholder: "مثلا: أبو فهد")
             Text("اختار رمزك")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Palette.text2)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: FriendStore.emojis.count), spacing: 4) {
                 ForEach(FriendStore.emojis, id: \.self) { e in
                     Button {
                         Haptics.tap()
                         friends.emoji = e
                     } label: {
                         Text(e)
-                            .font(.system(size: 24))
-                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .font(.system(size: 22))
+                            .frame(maxWidth: .infinity, minHeight: 38)
                             .background(Color.white.opacity(friends.emoji == e ? 0.16 : 0.04),
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(
@@ -314,7 +314,7 @@ struct FriendsView: View {
     private func leaderboard(_ board: [FriendCard], leader: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("ترتيب هالأسبوع")
+                Text("ترتيب هذا الأسبوع")
                     .font(.system(size: 17, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Spacer()
@@ -337,7 +337,7 @@ struct FriendsView: View {
                     .foregroundStyle(Palette.text2)
                     .padding(.top, 8)
             } else {
-                Text("اضغط مطوّل على صديق عشان تحذفه")
+                Text("اضغط مطول على صديق عشان تحذفه")
                     .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(Palette.text3)
                     .padding(.top, 6)
@@ -386,7 +386,7 @@ struct FriendsView: View {
                 }
                 .frame(height: 6)
                 if !isMe {
-                    Text("حدّث \(Self.relative.localizedString(for: c.updatedAt, relativeTo: Date()))")
+                    Text("حدث \(Self.relative.localizedString(for: c.updatedAt, relativeTo: Date()))")
                         .font(.system(size: 10, design: .rounded))
                         .foregroundStyle(Palette.text3)
                 }
@@ -453,7 +453,7 @@ struct FriendsView: View {
 
     private func staleCard(_ list: [FriendCard]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ما حدّثوا هالأسبوع")
+            Text("ما حدثوا هذا الأسبوع")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
             Text("اطلب منهم يرسلون كودهم الجديد عشان يدخلون الترتيب.")

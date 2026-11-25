@@ -225,6 +225,20 @@ struct SoftButtonStyle: ButtonStyle {
     }
 }
 
+/// توقيع التطبيق تحت الصفحات: © 0xF8D وتحته «صناعة سعودية»
+struct SaudiMadeFooter: View {
+    var body: some View {
+        VStack(spacing: 3) {
+            Text("© 0xF8D")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(Palette.text3)
+            Text("صناعة سعودية 🇸🇦")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(Palette.green.opacity(0.85))
+        }
+    }
+}
+
 struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil

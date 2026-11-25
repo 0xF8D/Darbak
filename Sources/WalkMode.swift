@@ -1,7 +1,7 @@
 // دربك — © 0xF8D
 //
 // وضع المشي: زر تشغيل/إيقاف.
-// - يبقي التطبيق شغّال بالخلفية عن طريق الموقع (بدقة منخفضة)، فعداد الجوال يكمل يرسل الخطوات
+// - يبقي التطبيق شغال بالخلفية عن طريق الموقع (بدقة منخفضة)، فعداد الجوال يكمل يرسل الخطوات
 // - يعرض الخطوات مباشرة على شاشة القفل والجزيرة (Live Activity)
 
 import Foundation
@@ -39,7 +39,7 @@ final class WalkMode: NSObject, ObservableObject, CLLocationManagerDelegate {
         case .notDetermined:
             location.requestWhenInUseAuthorization()
         case .denied, .restricted:
-            message = "الموقع مقفل، فالتحديث بالخلفية ممكن يوقف. فعّله من الإعدادات > دربك > الموقع."
+            message = "الموقع مقفل، فالتحديث بالخلفية ممكن يوقف. فعله من الإعدادات > دربك > الموقع."
         default:
             beginLocation()
         }
@@ -93,7 +93,7 @@ final class WalkMode: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let s = manager.authorizationStatus
         if s == .denied || s == .restricted, isOn {
-            message = "الموقع مقفل، فالتحديث بالخلفية ممكن يوقف. فعّله من الإعدادات > دربك > الموقع."
+            message = "الموقع مقفل، فالتحديث بالخلفية ممكن يوقف. فعله من الإعدادات > دربك > الموقع."
         }
         beginLocation()
     }
@@ -106,7 +106,7 @@ final class WalkMode: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     private func startActivity() {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            message = "فعّل «الأنشطة المباشرة» من الإعدادات > دربك عشان تطلع خطواتك على شاشة القفل."
+            message = "فعل «الأنشطة المباشرة» من الإعدادات > دربك عشان تطلع خطواتك على شاشة القفل."
             return
         }
         let h = HealthStore.shared

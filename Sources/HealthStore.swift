@@ -8,7 +8,7 @@
 // اليوم: ناخذ الأكبر بين الصحة والعداد المباشر عشان الرقم ما يتأخر.
 //
 // السجل يتقرا من جديد كل ما تفتح التطبيق، وكل ما الصحة تقول فيه بيانات جديدة
-// (مثلاً الساعة زامنت متأخر)، وأول ما ينفتح قفل الجوال لو القراية فشلت وهو مقفول.
+// (مثلا الساعة زامنت متأخر)، وأول ما ينفتح قفل الجوال لو القراية فشلت وهو مقفول.
 
 import Foundation
 import HealthKit
@@ -31,7 +31,7 @@ enum HealthAccess {
     case ok
     case unavailable   // الجهاز ما فيه الصحة (مثل بعض الآيبادات)
     case blocked       // برنامج التثبيت شال صلاحية الصحة من التطبيق
-    case noHistory     // الصحة ما رجعت أي شي (غالبًا الإذن مقفل) والجوال عنده خطوات
+    case noHistory     // الصحة ما رجعت أي شي (غالبا الإذن مقفل) والجوال عنده خطوات
 }
 
 struct DayExtras {
@@ -61,7 +61,7 @@ struct CelebrationEvent: Identifiable, Equatable {
     }
 
     static func challenge(_ c: Challenge) -> CelebrationEvent {
-        CelebrationEvent(title: "خلّصت تحدي!", subtitle: "\(c.title) · +\(Fmt.num(c.xp)) XP",
+        CelebrationEvent(title: "خلصت تحدي!", subtitle: "\(c.title) · +\(Fmt.num(c.xp)) XP",
                          colors: [Palette.green, Palette.cyan], label: "", symbol: "flag.checkered")
     }
 }
@@ -189,7 +189,7 @@ final class HealthStore: ObservableObject {
         }
     }
 
-    /// زر «جرّب مرة ثانية»: يطلب الإذن من جديد ويعيد قراءة السجل كامل
+    /// زر «جرب مرة ثانية»: يطلب الإذن من جديد ويعيد قراءة السجل كامل
     func retryHealth() {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         hkAnswered = false
@@ -236,12 +236,12 @@ final class HealthStore: ObservableObject {
         if force || Date().timeIntervalSince(lastExtras) > 30 {
             refreshExtras()
         }
-        // رجع للتطبيق (يمكن فعّل الإذن من الصحة): نعيد قراءة السجل
+        // رجع للتطبيق (يمكن فعل الإذن من الصحة): نعيد قراءة السجل
         if force && healthReady && (access == .noHistory || access == .blocked) {
             retryHealth()
         } else if force {
             // كل ما تفتح التطبيق نقرا الأيام الأخيرة من الصحة من جديد،
-            // عشان أي خطوات وصلت متأخر (الساعة مثلاً) تنحسب
+            // عشان أي خطوات وصلت متأخر (الساعة مثلا) تنحسب
             reloadHealth()
         } else if Date().timeIntervalSince(lastRecentRefresh) > 120 {
             reloadHealth()
@@ -305,7 +305,7 @@ final class HealthStore: ObservableObject {
                 self.errorMessage = nil
                 self.queryFailed = false
             } else {
-                // غالبًا الجوال مقفول (الصحة مشفرة). نخلي آخر أرقام صحيحة ونعيد المحاولة لاحقًا
+                // غالبا الجوال مقفول (الصحة مشفرة). نخلي آخر أرقام صحيحة ونعيد المحاولة لاحقا
                 if let message { self.errorMessage = message }
                 self.queryFailed = true
             }

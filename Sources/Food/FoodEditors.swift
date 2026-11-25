@@ -38,7 +38,7 @@ struct IngredientEditor: View {
                 AppBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        InputField(title: "اسم المكون", text: $name, placeholder: "مثلًا: كريمة طبخ")
+                        InputField(title: "اسم المكون", text: $name, placeholder: "مثلا: كريمة طبخ")
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("الوحدة")
@@ -140,7 +140,7 @@ struct RecipeEditor: View {
                 AppBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        InputField(title: "اسم الطبخة", text: $recipe.name, placeholder: "مثلًا: باستا بالكريمة")
+                        InputField(title: "اسم الطبخة", text: $recipe.name, placeholder: "مثلا: باستا بالكريمة")
 
                         Picker("", selection: $recipe.kind) {
                             ForEach(RecipeKind.allCases) { k in
@@ -278,7 +278,7 @@ struct RecipeEditor: View {
                 row("الوجبة الوحدة (من \(Fmt.num(recipe.meals)))", total / Double(max(recipe.meals, 1)), Palette.green, big: true)
                 row("اليوم الواحد (من \(Fmt.num(recipe.days)))", total / Double(max(recipe.days, 1)), Palette.cyan, big: false)
                 let perDayMeals = Double(recipe.meals) / Double(max(recipe.days, 1))
-                Text("يعني تقريبًا \(Fmt.dec(perDayMeals)) وجبة باليوم")
+                Text("يعني تقريبا \(Fmt.dec(perDayMeals)) وجبة باليوم")
                     .font(.system(size: 12, design: .rounded))
                     .foregroundStyle(Palette.text3)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -343,7 +343,7 @@ struct AddItemSheet: View {
                         }
 
                         HStack(spacing: 10) {
-                            InputField(title: "دوّر", text: $search, placeholder: "اسم المكون")
+                            InputField(title: "دور", text: $search, placeholder: "اسم المكون")
                             Button {
                                 newIngredient = Ingredient(name: search, unit: .ml, refAmount: 100, refKcal: 0)
                             } label: {
@@ -354,7 +354,7 @@ struct AddItemSheet: View {
                         }
 
                         if food.ingredients.isEmpty {
-                            emptyHint("ما عندك مكونات محفوظة. اضغط + وسجّل أول مكون (مثلًا كريمة طبخ ١٠٠ مل = ٢٠٠ سعرة).")
+                            emptyHint("ما عندك مكونات محفوظة. اضغط + وسجل أول مكون (مثلا كريمة طبخ ١٠٠ مل = ٢٠٠ سعرة).")
                         }
 
                         ForEach(filtered) { ing in
@@ -448,10 +448,10 @@ struct QuickAddSheet: View {
             ZStack {
                 AppBackground()
                 VStack(spacing: 14) {
-                    InputField(title: "وش أكلت؟ (اختياري)", text: $name, placeholder: "مثلًا: سناك")
+                    InputField(title: "وش أكلت؟ (اختياري)", text: $name, placeholder: "مثلا: سناك")
                     InputField(title: "السعرات", text: $kcalText, placeholder: "250",
                                keyboard: .numberPad, suffix: "سعرة")
-                    Button("سجّل") {
+                    Button("سجل") {
                         guard let k = Num.parse(kcalText), k > 0 else { return }
                         food.addLog(name: name.trimmingCharacters(in: .whitespaces), kcal: k)
                         Haptics.tap()
@@ -464,7 +464,7 @@ struct QuickAddSheet: View {
                 .padding(18)
                 .screenWidth()
             }
-            .navigationTitle("سجّل سعرات")
+            .navigationTitle("سجل سعرات")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

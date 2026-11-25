@@ -108,7 +108,7 @@ struct TodayFoodSection: View {
             Button {
                 showQuickAdd = true
             } label: {
-                Label("سجّل سعرات", systemImage: "plus")
+                Label("سجل سعرات", systemImage: "plus")
             }
             .buttonStyle(NeonButtonStyle(colors: [Palette.orange, Palette.pink]))
 
@@ -254,7 +254,7 @@ struct RecipesSection: View {
             .buttonStyle(NeonButtonStyle())
 
             if food.recipes.isEmpty {
-                emptyHint("سوّ طبخة وحط مكوناتها بالكمية، ونحسب لك السعرات. لو طبخت كمية لأكثر من يوم اختر «مجموعة» ونقسمها لك على الأيام والوجبات.")
+                emptyHint("سو طبخة وحط مكوناتها بالكمية، ونحسب لك السعرات. لو طبخت كمية لأكثر من يوم اختر «مجموعة» ونقسمها لك على الأيام والوجبات.")
             }
 
             ForEach(food.recipes) { r in
@@ -357,7 +357,7 @@ struct IngredientsSection: View {
             .buttonStyle(NeonButtonStyle())
 
             if food.ingredients.isEmpty {
-                emptyHint("سجّل المنتجات اللي تطبخ فيها مرة وحدة. مثال: كريمة طبخ — ١٠٠ مل = ٢٠٠ سعرة. بعدين لما تحطها في طبخة بـ ١٠ مل يحسبها لك ٢٠ سعرة.")
+                emptyHint("سجل المنتجات اللي تطبخ فيها مرة وحدة. مثال: كريمة طبخ — ١٠٠ مل = ٢٠٠ سعرة. بعدين لما تحطها في طبخة بـ ١٠ مل يحسبها لك ٢٠ سعرة.")
             }
 
             ForEach(food.ingredients) { ing in

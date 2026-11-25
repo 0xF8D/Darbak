@@ -77,9 +77,7 @@ struct ShareCardView: View {
 
                 Spacer(minLength: 0)
 
-                Text("© 0xF8D")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(Palette.text3)
+                SaudiMadeFooter()
             }
             .padding(24)
         }
