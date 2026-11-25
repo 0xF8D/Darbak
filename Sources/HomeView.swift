@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var health: HealthStore
     @EnvironmentObject var settings: AppSettings
+    var openProgress: () -> Void = {}
 
     @State var selectedDay: DayStat?
     @State var showSettings = false
@@ -38,6 +39,8 @@ struct HomeView: View {
                     }
 
                     weekCard(goal: goal)
+
+                    challengesTeaser
 
                     Button {
                         showShare = true
@@ -75,8 +78,7 @@ struct HomeView: View {
         .sheet(isPresented: $showShare) {
             ShareSheetView(card: ShareCardView(steps: steps,
                                                goal: goal,
-                                               streak: health.streak,
-                                               longest: health.longestStreak,
+                                               level: health.progress.level.level,
                                                distanceKm: health.todayDistanceKm,
                                                date: Date()))
                 .appEnvironment()
@@ -101,7 +103,7 @@ struct HomeView: View {
                     .minimumScaleFactor(0.75)
             }
             Spacer()
-            streakChip
+            levelChip
             Button {
                 showSettings = true
             } label: {
@@ -116,32 +118,71 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
-    private var streakChip: some View {
-        let on = health.streak > 0
-        let frozen = health.streakFrozen
-        let color = frozen ? Palette.cyan : Palette.orange
-        return VStack(spacing: 1) {
-            HStack(spacing: 4) {
-                Text(frozen ? "❄️" : "🔥")
-                    .font(.system(size: 18))
-                    .saturation(on ? 1 : 0)
-                Text(Fmt.num(health.streak))
-                    .font(.system(size: 20, weight: .heavy, design: .rounded))
-                    .foregroundStyle(on ? color : Palette.text2)
-                    .contentTransition(.numericText())
+    private var levelChip: some View {
+        let level = health.progress.level
+        let rank = level.rank
+        return Button {
+            Haptics.tap()
+            openProgress()
+        } label: {
+            VStack(spacing: 3) {
+                HStack(spacing: 4) {
+                    Text("⭐")
+                        .font(.system(size: 15))
+                    Text(Fmt.num(level.level))
+                        .font(.system(size: 19, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .contentTransition(.numericText())
+                }
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.12))
+                        Capsule().fill(rank.gradient)
+                            .frame(width: max(g.size.width * level.fraction, 3))
+                    }
+                }
+                .frame(width: 46, height: 4)
             }
-            Text(frozen ? "متجمّد" : "أطول \(Fmt.num(health.longestStreak))")
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(frozen ? Palette.cyan : Palette.text2)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(rank.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(rank.primary.opacity(0.5), lineWidth: 1)
+            )
+            .shadow(color: rank.primary.opacity(0.35), radius: 8)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(color.opacity(on ? 0.12 : 0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(color.opacity(on ? 0.5 : 0.1), lineWidth: 1)
-        )
-        .shadow(color: on ? color.opacity(0.4) : .clear, radius: 8)
+        .buttonStyle(.plain)
+    }
+
+    private var challengesTeaser: some View {
+        let week = health.progress.week
+        let done = week.filter(\.done).count
+        return Button {
+            Haptics.tap()
+            openProgress()
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("تحديات الأسبوع")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("\(Fmt.num(done))/\(Fmt.num(week.count))")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(Palette.cyan)
+                    Spacer()
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Palette.text3)
+                }
+                ForEach(week) { c in
+                    ChallengeRow(challenge: c, tint: Palette.cyan, compact: true)
+                }
+            }
+            .padding(16)
+            .glassCard(tint: Palette.cyan)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Pieces
@@ -253,13 +294,6 @@ struct WeekDayCircle: View {
                     Circle()
                         .stroke(Color.white.opacity(0.85), lineWidth: 1)
                         .padding(-4)
-                }
-            }
-            .overlay(alignment: .topTrailing) {
-                if day.frozen {
-                    Text("❄️")
-                        .font(.system(size: 10))
-                        .offset(x: 4, y: -4)
                 }
             }
 

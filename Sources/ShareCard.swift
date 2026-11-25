@@ -6,8 +6,7 @@ import UIKit
 struct ShareCardView: View {
     let steps: Int
     let goal: Int
-    let streak: Int
-    let longest: Int
+    let level: Int
     let distanceKm: Double
     let date: Date
 
@@ -71,9 +70,9 @@ struct ShareCardView: View {
                 .frame(height: 10)
 
                 HStack(spacing: 10) {
-                    pill("🔥 \(Fmt.num(streak)) يوم")
+                    pill("⭐ مستوى \(Fmt.num(level))")
                     pill("📍 \(Fmt.dec(distanceKm)) كم")
-                    pill("🏆 أطول \(Fmt.num(longest))")
+                    pill("🎯 \(Progression.k(goal))")
                 }
 
                 Spacer(minLength: 0)

@@ -101,7 +101,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            Text("أقل هدف ٧ آلاف، والستريك والتذكير يمشون على هدفك.")
+            Text("أقل هدف ٧ آلاف، والتذكير يمشي على هدفك.")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text3)
         }
