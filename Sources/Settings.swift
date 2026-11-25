@@ -199,7 +199,8 @@ struct SettingsView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(tint: s.color)
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.xml]) { result in
+        // أي ملف (بعض الجوالات تربط ‎.xml بتطبيق ثاني فيرفضه المختار). نتأكد من المحتوى بنفسنا
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.xml, .item]) { result in
             handleImport(result)
         }
     }
