@@ -14,12 +14,12 @@ struct HealthAccessBanner: View {
         case .noHistory:
             card(icon: "heart.text.square.fill",
                  title: "سجلك القديم مو طالع؟",
-                 text: "دربك ما عنده إذن يقرأ من «الصحة»، فشايف آخر ٧ أيام بس من عداد الجوال.\nعشان تطلع كل أيامك ودروعك القديمة:\nافتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغّل «الكل».",
+                 text: "دربك ما عنده إذن يقرأ من «الصحة»، فشايف آخر ٧ أيام بس من عداد الجوال.\nعشان تطلع كل أيامك ودروعك القديمة:\nافتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغل «الكل».",
                  showOpenHealth: true)
         case .blocked:
             card(icon: "exclamationmark.shield.fill",
                  title: "الصحة مقفلة على التطبيق",
-                 text: "البرنامج اللي ثبّت فيه دربك شال صلاحية «الصحة» من التطبيق، فما نقدر نقرأ سجلك القديم (شايفين آخر ٧ أيام بس).\nجرّب تثبته ببرنامج توقيع أو شهادة ثانية تدعم الصحة (HealthKit).",
+                 text: "البرنامج اللي ثبت فيه دربك شال صلاحية «الصحة» من التطبيق، فما نقدر نقرأ سجلك القديم (شايفين آخر ٧ أيام بس).\nجرب تثبته ببرنامج توقيع أو شهادة ثانية تدعم الصحة (HealthKit).",
                  showOpenHealth: false)
         default:
             EmptyView()
@@ -53,7 +53,7 @@ struct HealthAccessBanner: View {
                     Haptics.tap()
                     health.retryHealth()
                 } label: {
-                    Label("جرّب مرة ثانية", systemImage: "arrow.clockwise")
+                    Label("جرب مرة ثانية", systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(SoftButtonStyle(color: Palette.cyan))
             }

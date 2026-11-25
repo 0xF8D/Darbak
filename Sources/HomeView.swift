@@ -52,12 +52,10 @@ struct HomeView: View {
                     if let msg = health.errorMessage, !health.hasAnyData {
                         hint(msg)
                     } else if !health.isLoading && !health.hasAnyData {
-                        hint("ما جتني خطوات. افتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغّل «الكل».")
+                        hint("ما جتني خطوات. افتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغل «الكل».")
                     }
 
-                    Text("© 0xF8D")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Palette.text3)
+                    SaudiMadeFooter()
                         .padding(.top, 4)
                 }
                 .padding(.horizontal, 18)
@@ -192,12 +190,12 @@ struct HomeView: View {
         if let next = BadgeTier.next(after: steps) {
             HStack(spacing: 6) {
                 Circle().fill(next.gradient).frame(width: 8, height: 8)
-                Text("الدرع الجاي \(next.label) — باقي \(Fmt.num(next.steps - steps)) خطوة")
+                Text("هدفك الجاي \(Fmt.num(next.steps)) - باقي \(Fmt.num(next.steps - steps)) خطوة")
             }
             .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(next.primary)
         } else {
-            Text("جبت كل دروع اليوم 👑")
+            Text("حققت كل أهدافك اليوم 👑")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(Palette.gold)
         }

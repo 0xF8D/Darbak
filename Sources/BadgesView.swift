@@ -86,9 +86,6 @@ struct BadgesView: View {
                 Text("\(Fmt.num(tier.steps)) خطوة")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text(count > 0 ? "جبته \(Fmt.num(count)) مرة" : "لسه ما جبته")
-                    .font(.system(size: 13, design: .rounded))
-                    .foregroundStyle(count > 0 ? tier.primary : Palette.text3)
             }
             .frame(maxWidth: .infinity)
             .frame(height: cardHeight)
@@ -118,7 +115,7 @@ struct BadgesView: View {
                         .shadow(color: Palette.gold.opacity(0.6), radius: 10)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
-                    Text(best.map { "خطوة · \(Fmt.longDate($0.date))" } ?? "امشِ وأول رقم قياسي لك يطلع هنا")
+                    Text(best.map { "خطوة · \(Fmt.longDate($0.date))" } ?? "امش وأول رقم قياسي لك يطلع هنا")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(Palette.text2)
                         .lineLimit(2)
@@ -311,7 +308,7 @@ struct ChallengeRow: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                         Spacer(minLength: 4)
-                        Text(c.done ? "خلّصته ✓" : c.progressText)
+                        Text(c.done ? "خلصته ✓" : c.progressText)
                             .foregroundStyle(c.done ? Palette.green : Palette.text2)
                     }
                     .font(.system(size: 11, design: .rounded))

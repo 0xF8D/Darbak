@@ -1,6 +1,6 @@
 // دربك — © 0xF8D
 //
-// الدروع: كريستال زجاجي سداسي بحواف ذهبية، ولمعة تتحرك لما تميّل الجوال.
+// الدروع: كريستال زجاجي سداسي بحواف ذهبية، ولمعة تتحرك لما تميل الجوال.
 // الجزء الثابت يترسم مرة وحدة، وبس خط اللمعة يتحدث مع الحركة عشان ما يعلق.
 
 import SwiftUI
@@ -26,7 +26,7 @@ final class MotionManager: ObservableObject {
             let y = max(-0.8, min(0.8, motion.attitude.pitch - 0.6))
             self.smooth.x = self.smooth.x * 0.8 + CGFloat(x) * 0.2
             self.smooth.y = self.smooth.y * 0.8 + CGFloat(y) * 0.2
-            // ما نحدّث الشاشة إلا إذا تحرك الجوال فعلًا
+            // ما نحدث الشاشة إلا إذا تحرك الجوال فعلا
             if abs(self.smooth.x - self.tilt.x) > 0.004 || abs(self.smooth.y - self.tilt.y) > 0.004 {
                 self.tilt = self.smooth
             }

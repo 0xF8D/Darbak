@@ -28,7 +28,7 @@ struct Rank {
         (1, Rank(title: "مبتدئ", colors: [Color(hex: 0x8FA6D8), Color(hex: 0x4D6BA8)])),
         (5, Rank(title: "ماشي", colors: [Color(hex: 0x22E1FF), Color(hex: 0x1E8BFF)])),
         (10, Rank(title: "مستكشف", colors: [Color(hex: 0x4D8BFF), Color(hex: 0x6A4DFF)])),
-        (20, Rank(title: "رحّال", colors: [Color(hex: 0xA66BFF), Color(hex: 0xD04DFF)])),
+        (20, Rank(title: "رحال", colors: [Color(hex: 0xA66BFF), Color(hex: 0xD04DFF)])),
         (30, Rank(title: "مغامر", colors: [Color(hex: 0xFF4FD8), Color(hex: 0xFF7A45)])),
         (45, Rank(title: "بطل", colors: [Color(hex: 0xFF8A3D), Color(hex: 0xFF3D5A)])),
         (60, Rank(title: "أسطورة", colors: [Color(hex: 0xFFD066), Color(hex: 0xD99117)]))
@@ -172,16 +172,16 @@ enum Progression {
 
         return [
             Challenge(id: "\(key)-total", period: .week, icon: "figure.walk",
-                      title: "امشِ \(Fmt.num(total)) خطوة هالأسبوع",
-                      detail: "مجموع خطواتك من الأحد للسبت",
+                      title: "امش \(Fmt.num(total)) خطوة هذا الأسبوع",
+                      detail: "مجموع خطواتك من الأحد إلى السبت",
                       value: v.reduce(0, +), target: total, xp: weeklyXP, countsDays: false),
             Challenge(id: "\(key)-days", period: .week, icon: "calendar",
-                      title: "٤ أيام فوق \(k(thr))",
-                      detail: "أي ٤ أيام بالأسبوع توصل فيها \(Fmt.num(thr)) خطوة",
+                      title: "امش \(Fmt.num(thr)) خطوة في ٤ أيام",
+                      detail: "أي ٤ أيام من الأسبوع",
                       value: v.filter { $0 >= thr }.count, target: 4, xp: weeklyXP, countsDays: true),
             Challenge(id: "\(key)-big", period: .week, icon: "bolt.fill",
-                      title: "يوم قوي: \(k(big)) خطوة",
-                      detail: "يوم واحد بس توصل فيه \(Fmt.num(big)) خطوة",
+                      title: "يوم الأسبوع: امش \(Fmt.num(big)) خطوة",
+                      detail: "في يوم واحد من الأسبوع",
                       value: v.max() ?? 0, target: big, xp: weeklyXP, countsDays: false)
         ]
     }
@@ -199,16 +199,16 @@ enum Progression {
 
         return [
             Challenge(id: "\(key)-total", period: .month, icon: "map.fill",
-                      title: "\(k(total)) خطوة هالشهر",
-                      detail: "مجموع خطواتك من أول الشهر لآخره",
+                      title: "امش \(k(total)) خطوة هذا الشهر",
+                      detail: "مجموع خطواتك من أول الشهر إلى آخره",
                       value: v.reduce(0, +), target: total, xp: monthlyXP, countsDays: false),
             Challenge(id: "\(key)-active", period: .month, icon: "checkmark.circle.fill",
-                      title: "\(Fmt.num(active)) يوم فوق ٧ آلاف",
-                      detail: "كل يوم توصل فيه ٧٬٠٠٠ خطوة ينحسب",
+                      title: "امش ٧٬٠٠٠ خطوة في \(Fmt.num(active)) يوم",
+                      detail: "أي \(Fmt.num(active)) يوم من الشهر",
                       value: v.filter { $0 >= 7_000 }.count, target: active, xp: monthlyXP, countsDays: true),
             Challenge(id: "\(key)-big", period: .month, icon: "crown.fill",
-                      title: "يوم أسطوري: \(k(big)) خطوة",
-                      detail: "يوم واحد بالشهر توصل فيه \(Fmt.num(big)) خطوة",
+                      title: "يوم الشهر: امش \(Fmt.num(big)) خطوة",
+                      detail: "في يوم واحد من الشهر",
                       value: v.max() ?? 0, target: big, xp: monthlyXP, countsDays: false)
         ]
     }

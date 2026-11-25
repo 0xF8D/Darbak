@@ -159,7 +159,7 @@ struct SettingsView: View {
                     Text("🚶 وضع المشي")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("يخلي التطبيق شغّال بالخلفية وتطلع خطواتك على شاشة القفل والجزيرة على طول. ياكل بطارية شوي.")
+                    Text("يخلي التطبيق شغال بالخلفية وتطلع خطواتك على شاشة القفل والجزيرة على طول. ياكل بطارية شوي.")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(Palette.text2)
                 }
@@ -191,6 +191,9 @@ struct SettingsView: View {
             Text("من تصميم 0xF8D")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(LinearGradient(colors: [Palette.cyan, Palette.violet], startPoint: .leading, endPoint: .trailing))
+            Text("صناعة سعودية 🇸🇦")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(Palette.green)
             Text("© 2026 0xF8D — جميع الحقوق محفوظة")
                 .font(.system(size: 11, design: .rounded))
                 .foregroundStyle(Palette.text3)

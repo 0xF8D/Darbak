@@ -21,8 +21,8 @@ struct Ingredient: Codable, Identifiable, Equatable {
     var id = UUID()
     var name: String
     var unit: FoodUnit
-    var refAmount: Double   // مثلًا 100
-    var refKcal: Double     // مثلًا 200
+    var refAmount: Double   // مثلا 100
+    var refKcal: Double     // مثلا 200
 
     func kcal(for amount: Double) -> Double {
         refAmount > 0 ? amount / refAmount * refKcal : 0

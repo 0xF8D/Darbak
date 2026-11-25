@@ -55,9 +55,9 @@ targets:
         BGTaskSchedulerPermittedIdentifiers:
           - com.f8d.steps.refresh
         NSHealthShareUsageDescription: "دربك يقرأ خطواتك ومسافتك وسعراتك والطوابق من الصحة (الجوال والساعة) عشان يحسب دروعك ومستواك وتحدياتك."
-        NSMotionUsageDescription: "دربك يستخدم عداد خطوات الجوال عشان يحدّث خطواتك مباشرة وأنت تمشي."
-        NSLocationWhenInUseUsageDescription: "الموقع يُستخدم بس لما تشغّل «وضع المشي» عشان يبقى التطبيق شغّال بالخلفية ويحدّث خطواتك على شاشة القفل. ما نحفظ موقعك."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "الموقع يُستخدم بس لما تشغّل «وضع المشي» عشان يبقى التطبيق شغّال بالخلفية ويحدّث خطواتك على شاشة القفل. ما نحفظ موقعك."
+        NSMotionUsageDescription: "دربك يستخدم عداد خطوات الجوال عشان يحدث خطواتك مباشرة وأنت تمشي."
+        NSLocationWhenInUseUsageDescription: "الموقع يستخدم بس لما تشغل «وضع المشي» عشان يبقى التطبيق شغال بالخلفية ويحدث خطواتك على شاشة القفل. ما نحفظ موقعك."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "الموقع يستخدم بس لما تشغل «وضع المشي» عشان يبقى التطبيق شغال بالخلفية ويحدث خطواتك على شاشة القفل. ما نحفظ موقعك."
     entitlements:
       path: Config/Darbak.entitlements
       properties:
