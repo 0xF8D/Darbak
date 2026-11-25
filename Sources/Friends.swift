@@ -333,7 +333,7 @@ struct FriendsView: View {
             }
 
             if board.count == 1 {
-                Text("باقي ما أضفت أحد. أرسل كودك لشلتك وخلهم يرسلون لك أكوادهم 👇")
+                Text("باقي ما أضفت أحد. أرسل كودك للقروب وخلهم يرسلون أكوادهم 👇")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Palette.text2)
                     .padding(.top, 8)

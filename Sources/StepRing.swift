@@ -90,7 +90,10 @@ struct StepRing: View {
 
                 center(size: size)
                     .padding(.horizontal, lw * 1.8)
+                    .environment(\.layoutDirection, .rightToLeft)
             }
+            // الحلقة ترسم مع عقارب الساعة من فوق، حتى لو الجوال عربي (بدونها تنقلب وتبدأ من تحت)
+            .environment(\.layoutDirection, .leftToRight)
             .frame(width: size, height: size)
             .position(x: geo.size.width / 2, y: geo.size.height / 2)
             .animation(.spring(response: 0.9, dampingFraction: 0.8), value: progress)

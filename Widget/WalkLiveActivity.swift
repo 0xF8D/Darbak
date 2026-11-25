@@ -70,6 +70,7 @@ struct WalkLockView: View {
                     .stroke(AngularGradient(colors: Palette.ring, center: .center, startAngle: .degrees(0), endAngle: .degrees(360)),
                             style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .environment(\.layoutDirection, .leftToRight)
                 Image(systemName: "figure.walk")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Palette.cyan)
