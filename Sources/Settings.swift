@@ -2,6 +2,7 @@
 
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -27,6 +28,9 @@ struct SettingsView: View {
     @EnvironmentObject var friends: FriendStore
     @Environment(\.openURL) private var openURL
     @State private var showAdmin = false
+    @State private var showImporter = false
+    @State private var importing = false
+    @State private var importMessage: String?
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -169,6 +173,9 @@ struct SettingsView: View {
                     .environment(\.layoutDirection, .leftToRight)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+            if health.access == .noHistory || health.access == .blocked || health.access == .unavailable {
+                importSection
+            }
             if health.access == .noHistory || health.access == .blocked {
                 HStack(spacing: 8) {
                     if health.access == .noHistory {
@@ -192,6 +199,60 @@ struct SettingsView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(tint: s.color)
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.xml]) { result in
+            handleImport(result)
+        }
+    }
+
+    /// استيراد سجل الصحة (للي الصحة مقفلة عنده)
+    private var importSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider().overlay(Color.white.opacity(0.1))
+            Text("استورد سجلك القديم من الصحة")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text("١. افتح تطبيق الصحة ← صورتك فوق ← «تصدير كل البيانات الصحية».\n٢. احفظ الملف في «الملفات».\n٣. افتح الملف المضغوط في «الملفات» عشان ينفك.\n٤. ارجع هنا واضغط الزر، واختار ملف export.xml")
+                .font(.system(size: 12, design: .rounded))
+                .foregroundStyle(Palette.text2)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                importMessage = nil
+                showImporter = true
+            } label: {
+                Label(importing ? "يقرأ الملف… (ممكن ياخذ دقيقة)" : "اختار ملف export.xml",
+                      systemImage: importing ? "hourglass" : "square.and.arrow.down")
+            }
+            .buttonStyle(SoftButtonStyle(color: Palette.green))
+            .disabled(importing)
+            if let importMessage {
+                Text(importMessage)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Palette.green)
+            }
+            Text("بعدها كل يوم جديد ينحفظ في جوالك، فما تضيع أيامك.")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundStyle(Palette.text3)
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        guard case .success(let url) = result else { return }
+        importing = true
+        Task {
+            let days: [Date: Int]? = await Task.detached(priority: .userInitiated) {
+                let ok = url.startAccessingSecurityScopedResource()
+                defer { if ok { url.stopAccessingSecurityScopedResource() } }
+                return HealthExportParser().parse(url: url)
+            }.value
+            importing = false
+            guard let days, !days.isEmpty else {
+                importMessage = "ما لقيت خطوات في الملف. تأكد إنك اخترت export.xml"
+                return
+            }
+            let added = health.importHistory(days)
+            Haptics.success()
+            importMessage = "قريت \(Fmt.num(days.count)) يوم، وانضاف \(Fmt.num(added)) يوم لسجلك ✓"
+        }
     }
 
     private var healthStatus: (icon: String, color: Color, title: String, detail: String) {

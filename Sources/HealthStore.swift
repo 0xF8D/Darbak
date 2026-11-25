@@ -92,6 +92,8 @@ final class HealthStore: ObservableObject {
 
     private var hkSteps: [Date: Int] = [:]
     private var pedSteps: [Date: Int] = [:]
+    /// أيام محفوظة في الجوال (من العداد أو من ملف الصحة اللي استوردته)
+    private var archive: [Date: Int] = StepArchive.load()
     private var liveDay = Date.distantPast
     private var liveSteps = 0
     private var activeDay = Date.distantPast
@@ -495,6 +497,23 @@ final class HealthStore: ObservableObject {
         await FriendStore.shared.sync(force: true)
     }
 
+    /// يضيف الأيام اللي جت من ملف الصحة. يرجع كم يوم انضاف أو زاد
+    @discardableResult
+    func importHistory(_ days: [Date: Int]) -> Int {
+        let t = today
+        var added = 0
+        for (d, n) in days where d < t && n > (archive[d] ?? 0) {
+            archive[d] = n
+            added += 1
+        }
+        if added > 0 {
+            StepArchive.save(archive)
+            recompute()
+            pushWidget(force: true)
+        }
+        return added
+    }
+
     // MARK: - الدمج والحسابات
 
     private func recompute() {
@@ -504,6 +523,10 @@ final class HealthStore: ObservableObject {
         for (d, n) in pedSteps where (m[d] ?? 0) == 0 && n > 0 {
             m[d] = n
         }
+        // الأرشيف: أيام قديمة محفوظة في الجوال (لو الصحة ما عندها رقم لها)
+        for (d, n) in archive where d < t && (hkSteps[d] ?? 0) == 0 && n > (m[d] ?? 0) {
+            m[d] = n
+        }
         // اليوم: الأكبر (الصحة تتأخر شوي، والعداد مباشر)
         if let p = pedSteps[t], p > (m[t] ?? 0) { m[t] = p }
         if liveDay == t, liveSteps > (m[t] ?? 0) {
@@ -511,6 +534,14 @@ final class HealthStore: ObservableObject {
         }
         if m != steps { steps = m }
         updateAccess()
+
+        // نحفظ الأيام اللي خلصت عشان ما تضيع (عداد الجوال يحفظ ٧ أيام بس)
+        var archiveChanged = false
+        for (d, n) in m where d < t && n > (archive[d] ?? 0) {
+            archive[d] = n
+            archiveChanged = true
+        }
+        if archiveChanged { StepArchive.save(archive) }
 
         let p = engine.compute(steps: m, today: t)
         if p != progress { progress = p }
