@@ -487,6 +487,8 @@ final class HealthStore: ObservableObject {
             self.recompute()
             self.pushWidget(force: true)
         }
+        // نرسل خطواتك للشلة حتى والتطبيق بالخلفية
+        await FriendStore.shared.sync(force: true)
     }
 
     // MARK: - الدمج والحسابات

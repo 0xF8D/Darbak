@@ -32,15 +32,19 @@ struct DarbakApp: App {
                 .appEnvironment()
                 .task {
                     health.start()
+                    friends.start()
                     Reminder.requestAuthorization()
                 }
                 .onReceive(timer) { _ in health.tick() }
                 .onOpenURL { url in
-                    // رابط كود صديق: darbak://f/...
-                    friends.importText(url.absoluteString)
+                    // رابط دعوة: darbak://join/ABCD1234
+                    friends.handleURL(url)
                 }
                 .onChange(of: phase) { new in
-                    if new == .active { health.tick(force: true) }
+                    if new == .active {
+                        health.tick(force: true)
+                        Task { await friends.sync(force: true) }
+                    }
                     if new == .background {
                         health.pushWidget(force: true)
                         BackgroundRefresh.schedule()
@@ -93,7 +97,7 @@ struct RootView: View {
         .tint(Palette.cyan)
         .overlay { CelebrationHost() }
         .onChange(of: friends.importTick) { _ in
-            // فتحت رابط صديق: نوديك لصفحة الشلة
+            // فتحت رابط دعوة: نوديك لصفحة الشلة
             tab = .friends
         }
     }

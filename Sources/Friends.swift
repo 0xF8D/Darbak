@@ -1,75 +1,95 @@
 // دربك — © 0xF8D
 //
-// منافسة الشلة (بدون سيرفر):
-// كل واحد يرسل «كوده» (رابط فيه اسمه وخطواته هالأسبوع ومستواه) بالقروب.
-// تنسخ الرسالة وتضغط «الصق كود صديق»، أو تفتح الرابط، ويطلع بالترتيب.
-// الأرقام تتحدث كل ما صديقك يرسل كود جديد.
+// الشلة: مجموعات بكود من ٨ خانات.
+// - تنشئ مجموعة ويطلع لك كود، تعطيه أخوياك ويدخلون، وكلكم تشوفون بعض.
+// - اسمك وخطواتك يتحدثون كل دقيقة والتطبيق مفتوح (وبالخلفية لما iOS يسمح).
+// - صاحب المجموعة بس يقدر يطلع أحد منها.
+// السيرفر: Supabase (الدوال في supabase/schema.sql).
 
 import SwiftUI
 import UIKit
 
-// MARK: - كود الصديق
+// MARK: - الاتصال بالسيرفر
 
-struct FriendCard: Codable, Identifiable, Equatable {
-    var id: String
-    var name: String
-    var emoji: String
-    var week: Int        // بداية الأسبوع (unix)
-    var days: [Int]      // خطوات الأحد → السبت
-    var level: Int
-    var updated: Int     // وقت إرسال الكود (unix)
-
-    enum CodingKeys: String, CodingKey {
-        case id = "i", name = "n", emoji = "e", week = "w", days = "d", level = "l", updated = "u"
+enum Cloud {
+    struct Failure: Error {
+        let code: String
     }
 
-    static let linkPrefix = "darbak://f/"
-
-    var total: Int { days.reduce(0, +) }
-    var updatedAt: Date { Date(timeIntervalSince1970: TimeInterval(updated)) }
-
-    var code: String {
-        guard let data = try? JSONEncoder().encode(self) else { return "" }
-        return data.base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
+    static var isConfigured: Bool {
+        !CloudSecrets.url.isEmpty && !CloudSecrets.anonKey.isEmpty
     }
 
-    var link: String { Self.linkPrefix + code }
+    static func call(_ fn: String, _ params: [String: Any]) async throws -> Data {
+        try await call(fn, body: try JSONSerialization.data(withJSONObject: params))
+    }
 
-    /// يدور على الكود داخل أي نص (رسالة واتساب كاملة، رابط، أو الكود بروحه)
-    static func decode(_ text: String) -> FriendCard? {
-        var candidates: [String] = []
-        if let r = text.range(of: linkPrefix) {
-            let rest = text[r.upperBound...]
-            candidates.append(String(rest.prefix { !$0.isWhitespace && !$0.isNewline }))
+    static func call(_ fn: String, body: Data) async throws -> Data {
+        var base = CloudSecrets.url
+        while base.hasSuffix("/") { base.removeLast() }
+        guard isConfigured, let url = URL(string: base + "/rest/v1/rpc/" + fn) else {
+            throw Failure(code: "not_configured")
         }
-        candidates += text
-            .split(whereSeparator: { $0.isWhitespace || $0.isNewline })
-            .map(String.init)
-        for c in candidates {
-            if let card = fromCode(c) { return card }
+        var req = URLRequest(url: url, timeoutInterval: 15)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(CloudSecrets.anonKey, forHTTPHeaderField: "apikey")
+        if CloudSecrets.anonKey.hasPrefix("eyJ") {
+            req.setValue("Bearer \(CloudSecrets.anonKey)", forHTTPHeaderField: "Authorization")
         }
-        return nil
+        req.httpBody = body
+
+        let result: (Data, URLResponse)
+        do {
+            result = try await URLSession.shared.data(for: req)
+        } catch {
+            throw Failure(code: "offline")
+        }
+        let (data, response) = result
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            throw Failure(code: (obj?["message"] as? String) ?? "http_\(status)")
+        }
+        return data
     }
 
-    private static func fromCode(_ raw: String) -> FriendCard? {
-        var b = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if b.hasPrefix(linkPrefix) { b.removeFirst(linkPrefix.count) }
-        guard b.count >= 20, b.count < 4_000 else { return nil }
-        b = b.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
-        while b.count % 4 != 0 { b += "=" }
-        guard let data = Data(base64Encoded: b),
-              var card = try? JSONDecoder().decode(FriendCard.self, from: data),
-              card.days.count == 7, !card.id.isEmpty else { return nil }
-        card.name = String(card.name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
-        if card.name.isEmpty { card.name = "صديق" }
-        card.emoji = card.emoji.isEmpty ? "🙂" : String(card.emoji.prefix(1))
-        card.days = card.days.map { min(max($0, 0), 150_000) }
-        card.level = min(max(card.level, 1), 999)
-        return card
+    static func message(for error: Error) -> String {
+        switch (error as? Failure)?.code ?? "" {
+        case "offline": return "ما فيه اتصال بالإنترنت"
+        case "not_found": return "الكود غلط، تأكد منه"
+        case "banned": return "صاحب المجموعة طلعك منها"
+        case "full": return "المجموعة مليانة (٥٠ شخص)"
+        case "too_many": return "وصلت الحد: ١٠ مجموعات"
+        case "name_required": return "اكتب اسمك أول"
+        case "not_owner": return "صاحب المجموعة بس يقدر يطلع أحد"
+        case "not_configured": return "المجموعات مو مفعلة في هذي النسخة"
+        default: return "صار خطأ، جرب مرة ثانية"
+        }
     }
+}
+
+// MARK: - البيانات
+
+struct GroupMember: Codable, Identifiable, Equatable {
+    let id: String
+    let name: String
+    let emoji: String
+    let level: Int
+    let week: String?
+    let days: [Int]
+    let updated: Double
+
+    var updatedAt: Date { Date(timeIntervalSince1970: updated) }
+}
+
+struct CloudGroup: Codable, Identifiable, Equatable {
+    let code: String
+    let name: String
+    let owner: String
+    let members: [GroupMember]
+
+    var id: String { code }
 }
 
 // MARK: - المخزن
@@ -80,107 +100,269 @@ final class FriendStore: ObservableObject {
     static let emojis = ["⭐️", "🚀", "🦁", "🦅", "🐎", "👑", "🏃", "👧", "👦", "💪"]
 
     private let d = UserDefaults.standard
-    private let friendsKey = "friends"
+    private let groupsKey = "cloudGroups"
 
-    @Published var name: String { didSet { d.set(name, forKey: "profileName") } }
-    @Published var emoji: String { didSet { d.set(emoji, forKey: "profileEmoji") } }
-    @Published private(set) var friends: [FriendCard] = []
-    /// يزيد كل ما انضاف/تحدث صديق (عشان ننقلك لصفحة الشلة)
+    @Published var name: String {
+        didSet {
+            d.set(name, forKey: "profileName")
+            profileChanged()
+        }
+    }
+    @Published var emoji: String {
+        didSet {
+            d.set(emoji, forKey: "profileEmoji")
+            profileChanged()
+        }
+    }
+    @Published private(set) var groups: [CloudGroup] = []
+    @Published private(set) var busy = false
+    @Published private(set) var offline = false
+    @Published private(set) var lastSync: Date?
+    /// يزيد لما تفتح رابط مجموعة (عشان ننقلك لصفحة الشلة)
     @Published private(set) var importTick = 0
+    @Published var pendingCode = ""
     @Published var toast: String?
 
     let myID: String
+    private let secret: String
+    private var timer: Timer?
+    private var syncing = false
+    private var dirty = true
+    private var lastPush = Date.distantPast
+    private var nameWork: DispatchWorkItem?
 
     init() {
         name = d.string(forKey: "profileName") ?? ""
         emoji = d.string(forKey: "profileEmoji") ?? "🦁"
-        if let id = d.string(forKey: "profileID") {
-            myID = id
+        if let id = d.string(forKey: "profileID"), UUID(uuidString: id) != nil {
+            myID = id.lowercased()
         } else {
-            let id = UUID().uuidString
+            let id = UUID().uuidString.lowercased()
             d.set(id, forKey: "profileID")
             myID = id
         }
-        if let data = d.data(forKey: friendsKey),
-           let list = try? JSONDecoder().decode([FriendCard].self, from: data) {
-            friends = list
-        }
-    }
-
-    var displayName: String {
-        let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return n.isEmpty ? "أنا" : String(n.prefix(24))
-    }
-
-    var weekStart: Date {
-        AppCalendar.local.dateInterval(of: .weekOfYear, for: Date())?.start ?? AppCalendar.startOfToday()
-    }
-
-    func isCurrent(_ c: FriendCard) -> Bool {
-        abs(c.week - Int(weekStart.timeIntervalSince1970)) < 12 * 3600
-    }
-
-    func myCard() -> FriendCard {
-        let h = HealthStore.shared
-        return FriendCard(id: myID,
-                          name: displayName,
-                          emoji: emoji,
-                          week: Int(weekStart.timeIntervalSince1970),
-                          days: h.week(offset: 0).map { $0.isFuture ? 0 : $0.steps },
-                          level: h.progress.level.level,
-                          updated: Int(Date().timeIntervalSince1970))
-    }
-
-    func shareText() -> String {
-        let me = myCard()
-        return """
-        يا شباب تحدوني في دربك 👑
-        \(me.emoji) \(me.name): \(Fmt.num(me.total)) خطوة هذا الأسبوع · مستوى \(Fmt.num(me.level))
-
-        عشان تضيفني: انسخ الرسالة كاملة، وافتح دربك ← الشلة ← اضغط «لصق».
-        \(me.link)
-        """
-    }
-
-    func importText(_ text: String) {
-        defer { importTick += 1 }
-        guard let card = FriendCard.decode(text) else {
-            show("ما لقيت كود صحيح. انسخ رسالة صديقك كاملة وجرب مرة ثانية.")
-            return
-        }
-        if card.id == myID {
-            show("هذا كودك أنت 😄")
-            return
-        }
-        if let i = friends.firstIndex(where: { $0.id == card.id }) {
-            if card.updated < friends[i].updated {
-                show("عندك تحديث أجدد من \(friends[i].name)")
-                return
-            }
-            friends[i] = card
-            save()
-            show("تحدثت خطوات \(card.emoji) \(card.name) ✓")
+        if let s = d.string(forKey: "profileSecret"), s.count >= 16 {
+            secret = s
         } else {
-            friends.append(card)
-            save()
-            show("انضاف \(card.emoji) \(card.name) للشلة 🎉")
+            let s = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "")
+            d.set(s, forKey: "profileSecret")
+            secret = s
         }
-        Haptics.success()
-    }
-
-    func remove(_ id: String) {
-        friends.removeAll { $0.id == id }
-        save()
-    }
-
-    private func show(_ message: String) {
-        toast = message
-    }
-
-    private func save() {
-        if let data = try? JSONEncoder().encode(friends) {
-            d.set(data, forKey: friendsKey)
+        if let data = d.data(forKey: groupsKey),
+           let list = try? JSONDecoder().decode([CloudGroup].self, from: data) {
+            groups = list
         }
+    }
+
+    var trimmedName: String {
+        String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
+    }
+
+    var hasName: Bool { !trimmedName.isEmpty }
+
+    func isOwner(_ g: CloudGroup) -> Bool { g.owner.lowercased() == myID }
+
+    func isMe(_ m: GroupMember) -> Bool { m.id.lowercased() == myID }
+
+    /// بداية الأسبوع (الأحد) بصيغة 2026-11-22
+    static var weekKey: String {
+        let start = AppCalendar.local.dateInterval(of: .weekOfYear, for: Date())?.start ?? AppCalendar.startOfToday()
+        return keyFormatter.string(from: start)
+    }
+
+    private static let keyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .autoupdatingCurrent
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    // MARK: التحديث كل دقيقة
+
+    func start() {
+        guard timer == nil else { return }
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { await self?.sync() }
+        }
+        Task { await sync(force: true) }
+    }
+
+    /// يرسل خطواتك واسمك، ويجيب آخر أرقام الشلة
+    func sync(force: Bool = false) async {
+        guard Cloud.isConfigured else { return }
+        let plan: (Bool, Data)? = await MainActor.run {
+            guard self.hasName, !self.syncing else { return nil }
+            self.syncing = true
+            let push = force || self.dirty || Date().timeIntervalSince(self.lastPush) > 50
+            return (push, self.profilePayload())
+        }
+        guard let plan else { return }
+        do {
+            if plan.0 {
+                _ = try await Cloud.call("darbak_save_profile", body: plan.1)
+                await MainActor.run {
+                    self.lastPush = Date()
+                    self.dirty = false
+                }
+            }
+            try await refreshGroups()
+        } catch {
+            let isOffline = (error as? Cloud.Failure)?.code == "offline"
+            await MainActor.run { self.offline = isOffline }
+        }
+        await MainActor.run { self.syncing = false }
+    }
+
+    private func refreshGroups() async throws {
+        let data = try await Cloud.call("darbak_my_groups", auth())
+        let list = try JSONDecoder().decode([CloudGroup].self, from: data)
+        await MainActor.run {
+            if list != self.groups {
+                self.groups = list
+                if let encoded = try? JSONEncoder().encode(list) {
+                    self.d.set(encoded, forKey: self.groupsKey)
+                }
+            }
+            self.offline = false
+            self.lastSync = Date()
+        }
+    }
+
+    private func auth() -> [String: Any] {
+        ["p_id": myID, "p_secret": secret]
+    }
+
+    /// بياناتك جاهزة للإرسال (JSON)
+    private func profilePayload() -> Data {
+        let h = HealthStore.shared
+        let params: [String: Any] = [
+            "p_id": myID,
+            "p_secret": secret,
+            "p_name": trimmedName,
+            "p_emoji": emoji,
+            "p_level": h.progress.level.level,
+            "p_week_start": Self.weekKey,
+            "p_days": h.week(offset: 0).map { $0.isFuture ? 0 : $0.steps }
+        ]
+        return (try? JSONSerialization.data(withJSONObject: params)) ?? Data()
+    }
+
+    /// غيرت اسمك أو رمزك: نرسله بعد ثانية ونص (عشان ما نرسل مع كل حرف)
+    private func profileChanged() {
+        dirty = true
+        nameWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            Task { await self?.sync(force: true) }
+        }
+        nameWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
+    }
+
+    // MARK: إنشاء ودخول وخروج
+
+    @discardableResult
+    func createGroup(named groupName: String) async -> Bool {
+        await run {
+            let params = self.auth().merging(["p_name": groupName]) { _, new in new }
+            let data = try await Cloud.call("darbak_create_group", params)
+            let code = ((try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)) as? String) ?? ""
+            try await self.refreshGroups()
+            return "انشأت المجموعة، الكود: \(code)"
+        }
+    }
+
+    @discardableResult
+    func joinGroup(code raw: String) async -> Bool {
+        let code = String(raw.uppercased().filter { $0.isLetter || $0.isNumber })
+        guard code.count == 8 else {
+            await show("الكود ٨ خانات (حروف وأرقام)")
+            return false
+        }
+        return await run {
+            let params = self.auth().merging(["p_code": code]) { _, new in new }
+            let data = try await Cloud.call("darbak_join_group", params)
+            let groupName = ((try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)) as? String) ?? ""
+            try await self.refreshGroups()
+            await MainActor.run { self.pendingCode = "" }
+            return "دخلت «\(groupName)» 🎉"
+        }
+    }
+
+    func leave(_ g: CloudGroup) async {
+        let owner = isOwner(g)
+        await run {
+            let params = self.auth().merging(["p_code": g.code]) { _, new in new }
+            _ = try await Cloud.call("darbak_leave_group", params)
+            try await self.refreshGroups()
+            return owner ? "انحذفت المجموعة" : "طلعت من «\(g.name)»"
+        }
+    }
+
+    func kick(_ member: GroupMember, from g: CloudGroup) async {
+        await run {
+            let params = self.auth().merging(["p_code": g.code, "p_member": member.id]) { _, new in new }
+            _ = try await Cloud.call("darbak_kick", params)
+            try await self.refreshGroups()
+            return "طلعت \(member.name) من المجموعة"
+        }
+    }
+
+    /// يرسل حسابك أول (لازم قبل أي مجموعة)، بعدين ينفذ الطلب
+    @discardableResult
+    private func run(_ action: @escaping () async throws -> String) async -> Bool {
+        let payload: Data? = await MainActor.run {
+            guard self.hasName else { return nil }
+            self.busy = true
+            return self.profilePayload()
+        }
+        guard let payload else {
+            await show(Cloud.message(for: Cloud.Failure(code: "name_required")))
+            return false
+        }
+        var ok = false
+        do {
+            _ = try await Cloud.call("darbak_save_profile", body: payload)
+            await MainActor.run {
+                self.lastPush = Date()
+                self.dirty = false
+            }
+            let message = try await action()
+            await show(message)
+            ok = true
+        } catch {
+            await show(Cloud.message(for: error))
+        }
+        await MainActor.run { self.busy = false }
+        if ok { await MainActor.run { Haptics.success() } }
+        return ok
+    }
+
+    private func show(_ message: String) async {
+        await MainActor.run { self.toast = message }
+    }
+
+    // MARK: روابط الدعوة: darbak://join/ABCD1234
+
+    func handleURL(_ url: URL) {
+        guard url.scheme == "darbak", url.host == "join" else { return }
+        let code = url.lastPathComponent.uppercased().filter { $0.isLetter || $0.isNumber }
+        guard code.count == 8 else { return }
+        pendingCode = String(code)
+        importTick += 1
+        if hasName {
+            Task { await joinGroup(code: String(code)) }
+        }
+    }
+
+    static func inviteText(_ g: CloudGroup) -> String {
+        """
+        يا شباب تحدوني في دربك 👑
+        ادخلوا مجموعتي «\(g.name)» بالكود: \(g.code)
+
+        darbak://join/\(g.code)
+        """
     }
 }
 
@@ -190,7 +372,14 @@ struct FriendsView: View {
     @EnvironmentObject var friends: FriendStore
     @EnvironmentObject var health: HealthStore
     @State private var editingProfile = false
-    @State private var manualCode = ""
+    @State private var newGroupName = ""
+    @State private var leaveTarget: CloudGroup?
+    @State private var kickTarget: KickTarget?
+
+    struct KickTarget {
+        let member: GroupMember
+        let group: CloudGroup
+    }
 
     private static let relative: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -200,41 +389,58 @@ struct FriendsView: View {
     }()
 
     var body: some View {
-        let me = friends.myCard()
-        let current = friends.friends.filter { friends.isCurrent($0) }
-        let stale = friends.friends.filter { !friends.isCurrent($0) }
-        let board = ([me] + current).sorted { $0.total > $1.total }
-        let leader = max(board.first?.total ?? 1, 1)
-
         ZStack {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     ScreenTitle(title: "الشلة", subtitle: "نافس شلتك على خطوات الأسبوع")
 
-                    if editingProfile || friends.name.trimmingCharacters(in: .whitespaces).isEmpty {
-                        profileEditor
+                    if !Cloud.isConfigured {
+                        notice("المجموعات مو مفعلة في هذي النسخة.")
                     } else {
-                        profileCard(me)
+                        if editingProfile || !friends.hasName {
+                            profileEditor
+                        } else {
+                            profileCard
+                        }
+
+                        ForEach(friends.groups) { g in
+                            groupCard(g)
+                        }
+
+                        joinCreateCard
+
+                        if friends.offline {
+                            notice("ما فيه اتصال بالإنترنت. الأرقام تتحدث أول ما يرجع.")
+                        }
                     }
-
-                    leaderboard(board, leader: leader)
-
-                    actions
-
-                    if !stale.isEmpty {
-                        staleCard(stale)
-                    }
-
-                    howTo
                 }
                 .padding(.horizontal, 18)
                 .screenWidth()
                 .padding(.bottom, 30)
             }
+            .refreshable { await friends.sync(force: true) }
         }
         .overlay(alignment: .top) { toastView }
         .animation(.easeInOut(duration: 0.25), value: friends.toast)
+        .confirmationDialog(leaveTarget.map { friends.isOwner($0) ? "تحذف المجموعة لكل الأعضاء؟" : "تطلع من المجموعة؟" } ?? "",
+                            isPresented: Binding(get: { leaveTarget != nil }, set: { if !$0 { leaveTarget = nil } }),
+                            titleVisibility: .visible,
+                            presenting: leaveTarget) { g in
+            Button(friends.isOwner(g) ? "احذف المجموعة" : "اطلع", role: .destructive) {
+                Task { await friends.leave(g) }
+            }
+            Button("إلغاء", role: .cancel) {}
+        }
+        .confirmationDialog(kickTarget.map { "تطلع \($0.member.name) من المجموعة؟" } ?? "",
+                            isPresented: Binding(get: { kickTarget != nil }, set: { if !$0 { kickTarget = nil } }),
+                            titleVisibility: .visible,
+                            presenting: kickTarget) { t in
+            Button("طلعه", role: .destructive) {
+                Task { await friends.kick(t.member, from: t.group) }
+            }
+            Button("إلغاء", role: .cancel) {}
+        }
     }
 
     // MARK: - البروفايل
@@ -245,10 +451,15 @@ struct FriendsView: View {
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
             InputField(title: "اسمك (يطلع لشلتك)", text: $friends.name, placeholder: "مثلا: أبو فهد")
+            if !friends.hasName {
+                Text("لازم تكتب اسمك عشان تنشئ مجموعة أو تدخل وحدة")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Palette.orange)
+            }
             Text("اختار رمزك")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Palette.text2)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: FriendStore.emojis.count), spacing: 4) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: FriendStore.emojis.count), spacing: 4) {
                 ForEach(FriendStore.emojis, id: \.self) { e in
                     Button {
                         Haptics.tap()
@@ -267,7 +478,7 @@ struct FriendsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            if editingProfile {
+            if editingProfile && friends.hasName {
                 Button("تم") {
                     hideKeyboard()
                     editingProfile = false
@@ -279,18 +490,19 @@ struct FriendsView: View {
         .glassCard()
     }
 
-    private func profileCard(_ me: FriendCard) -> some View {
-        HStack(spacing: 12) {
-            Text(me.emoji)
+    private var profileCard: some View {
+        let level = health.progress.level.level
+        return HStack(spacing: 12) {
+            Text(friends.emoji)
                 .font(.system(size: 36))
                 .frame(width: 56, height: 56)
                 .background(Color.white.opacity(0.06), in: Circle())
             VStack(alignment: .leading, spacing: 3) {
-                Text(me.name)
+                Text(friends.trimmedName)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                Text("مستوى \(Fmt.num(me.level)) · \(Rank.of(level: me.level).title)")
+                Text("مستوى \(Fmt.num(level)) · \(Rank.of(level: level).title)")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Palette.gold)
             }
@@ -309,43 +521,138 @@ struct FriendsView: View {
         .glassCard()
     }
 
-    // MARK: - الترتيب
+    // MARK: - المجموعة
 
-    private func leaderboard(_ board: [FriendCard], leader: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("ترتيب هذا الأسبوع")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+    private struct Row: Identifiable {
+        let member: GroupMember
+        let name: String
+        let emoji: String
+        let level: Int
+        let total: Int
+        let isMe: Bool
+        let current: Bool
+        var id: String { member.id }
+    }
+
+    private func rows(for g: CloudGroup) -> [Row] {
+        let week = FriendStore.weekKey
+        let myDays = health.week(offset: 0).map { $0.isFuture ? 0 : $0.steps }
+        return g.members.map { m in
+            let me = friends.isMe(m)
+            let current = me || m.week == week
+            let total = me ? myDays.reduce(0, +) : (current ? m.days.reduce(0, +) : 0)
+            return Row(member: m,
+                       name: me ? friends.trimmedName : m.name,
+                       emoji: me ? friends.emoji : m.emoji,
+                       level: me ? health.progress.level.level : m.level,
+                       total: total,
+                       isMe: me,
+                       current: current)
+        }
+        .sorted { $0.total > $1.total }
+    }
+
+    private func groupCard(_ g: CloudGroup) -> some View {
+        let list = rows(for: g)
+        let leader = max(list.first?.total ?? 1, 1)
+        let owner = friends.isOwner(g)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(g.name)
+                    .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
+                    .lineLimit(1)
+                if owner {
+                    Text("المسؤول")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(Palette.gold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Palette.gold.opacity(0.14), in: Capsule())
+                }
                 Spacer()
-                Text("من الأحد للسبت")
-                    .font(.system(size: 11, design: .rounded))
+                Text("\(Fmt.num(g.members.count)) أعضاء")
+                    .font(.system(size: 12, design: .rounded))
                     .foregroundStyle(Palette.text3)
             }
-            .padding(.bottom, 6)
 
-            ForEach(Array(board.enumerated()), id: \.element.id) { i, c in
-                row(c, place: i + 1, leader: leader, isMe: c.id == friends.myID,
-                    king: i == 0 && board.count > 1 && c.total > 0)
-                if i < board.count - 1 {
+            codeRow(g)
+                .padding(.bottom, 4)
+
+            ForEach(Array(list.enumerated()), id: \.element.id) { i, r in
+                row(r, place: i + 1, leader: leader,
+                    king: i == 0 && list.count > 1 && r.total > 0,
+                    canKick: owner && !r.isMe, group: g)
+                if i < list.count - 1 {
                     Divider().overlay(Color.white.opacity(0.08))
                 }
             }
 
-            if board.count == 1 {
-                Text("باقي ما أضفت أحد. أرسل كودك للقروب 👇")
+            if list.count == 1 {
+                Text("باقي ما دخل أحد. أرسل الكود لشلتك 👆")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Palette.text2)
-                    .padding(.top, 8)
-            } else {
-                Text("اضغط مطول على صديق عشان تحذفه")
+                    .padding(.top, 4)
+            }
+
+            HStack {
+                Text(syncText)
                     .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(Palette.text3)
-                    .padding(.top, 6)
+                Spacer()
+                Button(owner ? "احذف المجموعة" : "اطلع من المجموعة") {
+                    leaveTarget = g
+                }
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(Palette.pink)
             }
+            .padding(.top, 6)
         }
         .padding(16)
         .glassCard(tint: Palette.gold)
+    }
+
+    private var syncText: String {
+        guard let last = friends.lastSync else { return "يتحدث كل دقيقة" }
+        return "يتحدث كل دقيقة · آخر تحديث \(Self.relative.localizedString(for: last, relativeTo: Date()))"
+    }
+
+    private func codeRow(_ g: CloudGroup) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("كود المجموعة")
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(Palette.text3)
+                Text(g.code)
+                    .font(.system(size: 22, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(Palette.cyan)
+                    .tracking(2)
+                    .environment(\.layoutDirection, .leftToRight)
+            }
+            Spacer()
+            Button {
+                UIPasteboard.general.string = g.code
+                Haptics.tap()
+                friends.toast = "نسخت الكود ✓"
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 38, height: 38)
+                    .background(Color.white.opacity(0.07), in: Circle())
+            }
+            .foregroundStyle(.white)
+            ShareLink(item: FriendStore.inviteText(g)) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 38, height: 38)
+                    .background(LinearGradient(colors: [Palette.violet, Palette.pink],
+                                                startPoint: .leading, endPoint: .trailing),
+                                in: Circle())
+            }
+            .foregroundStyle(.white)
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func medal(_ place: Int) -> String {
@@ -357,23 +664,23 @@ struct FriendsView: View {
         }
     }
 
-    private func row(_ c: FriendCard, place: Int, leader: Int, isMe: Bool, king: Bool) -> some View {
-        let frac = min(Double(c.total) / Double(max(leader, 1)), 1)
-        let colors = isMe ? [Palette.cyan, Palette.blue] : Rank.of(level: c.level).colors
+    private func row(_ r: Row, place: Int, leader: Int, king: Bool, canKick: Bool, group: CloudGroup) -> some View {
+        let frac = min(Double(r.total) / Double(max(leader, 1)), 1)
+        let colors = r.isMe ? [Palette.cyan, Palette.blue] : Rank.of(level: r.level).colors
         return HStack(spacing: 10) {
             Text(medal(place))
                 .font(.system(size: place <= 3 ? 22 : 15, weight: .bold, design: .rounded))
                 .foregroundStyle(Palette.text2)
                 .frame(width: 30)
-            Text(c.emoji)
+            Text(r.emoji)
                 .font(.system(size: 26))
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
-                    Text(isMe ? "\(c.name) (أنت)" : c.name)
+                    Text(r.isMe ? "\(r.name) (أنت)" : r.name)
                         .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(isMe ? Palette.cyan : .white)
+                        .foregroundStyle(r.isMe ? Palette.cyan : .white)
                         .lineLimit(1)
-                    Text("⭐\(Fmt.num(c.level))")
+                    Text("مستوى \(Fmt.num(r.level))")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(Palette.gold)
                 }
@@ -391,121 +698,95 @@ struct FriendsView: View {
                     }
                 }
                 .frame(height: 6)
-                if !isMe {
-                    Text("حدث \(Self.relative.localizedString(for: c.updatedAt, relativeTo: Date()))")
+                if !r.isMe {
+                    Text(r.current
+                         ? "حدث \(Self.relative.localizedString(for: r.member.updatedAt, relativeTo: Date()))"
+                         : "ما فتح دربك هذا الأسبوع")
                         .font(.system(size: 10, design: .rounded))
                         .foregroundStyle(Palette.text3)
                 }
             }
-            Text(Fmt.num(c.total))
+            Text(Fmt.num(r.total))
                 .font(.system(size: 17, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+            if canKick {
+                Menu {
+                    Button(role: .destructive) {
+                        kickTarget = KickTarget(member: r.member, group: group)
+                    } label: {
+                        Label("طلعه من المجموعة", systemImage: "person.fill.xmark")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Palette.text2)
+                        .frame(width: 26, height: 30)
+                }
+            }
         }
         .padding(.vertical, 6)
-        .contentShape(Rectangle())
-        .contextMenu {
-            if !isMe {
-                Button(role: .destructive) {
-                    friends.remove(c.id)
-                } label: {
-                    Label("احذف من الشلة", systemImage: "trash")
-                }
-            }
-        }
     }
 
-    // MARK: - الأزرار
+    // MARK: - إنشاء ودخول
 
-    private var actions: some View {
-        VStack(spacing: 12) {
-            ShareLink(item: friends.shareText()) {
-                Label("أرسل كودي للقروب", systemImage: "square.and.arrow.up")
-            }
-            .buttonStyle(NeonButtonStyle(colors: [Palette.violet, Palette.pink]))
-
-            HStack(spacing: 10) {
-                Text("نسخت كود صديق؟")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                Spacer()
-                PasteButton(payloadType: String.self) { strings in
-                    let text = strings.joined(separator: "\n")
-                    DispatchQueue.main.async { friends.importText(text) }
-                }
-                .buttonBorderShape(.capsule)
-                .labelStyle(.titleAndIcon)
-                .tint(Palette.cyan)
-            }
-
-            HStack(spacing: 8) {
-                InputField(title: "أو الصق الكود هنا", text: $manualCode, placeholder: "darbak://f/…")
-                Button {
-                    hideKeyboard()
-                    friends.importText(manualCode)
-                    manualCode = ""
-                } label: {
-                    Text("أضف")
-                }
-                .buttonStyle(SoftButtonStyle(color: Palette.cyan))
-                .disabled(manualCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .padding(.top, 22)
-            }
-        }
-        .padding(16)
-        .glassCard()
-    }
-
-    private func staleCard(_ list: [FriendCard]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("ما حدثوا هذا الأسبوع")
+    private var joinCreateCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(friends.groups.isEmpty ? "ابدأ مع شلتك" : "مجموعة ثانية؟")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text("اطلب منهم يرسلون كودهم الجديد عشان يدخلون الترتيب.")
-                .font(.system(size: 12, design: .rounded))
-                .foregroundStyle(Palette.text2)
-            ForEach(list) { c in
-                HStack(spacing: 10) {
-                    Text(c.emoji).font(.system(size: 22))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(c.name)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white)
-                        Text("آخر كود: \(Fmt.num(c.total)) خطوة · \(Self.relative.localizedString(for: c.updatedAt, relativeTo: Date()))")
-                            .font(.system(size: 11, design: .rounded))
-                            .foregroundStyle(Palette.text3)
-                    }
-                    Spacer()
-                    Button {
-                        Haptics.tap()
-                        friends.remove(c.id)
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundStyle(Palette.pink)
-                    }
-                    .buttonStyle(.plain)
+
+            HStack(alignment: .bottom, spacing: 8) {
+                InputField(title: "عندك كود؟", text: $friends.pendingCode, placeholder: "ABCD1234")
+                Button("ادخل") {
+                    hideKeyboard()
+                    Task { await friends.joinGroup(code: friends.pendingCode) }
                 }
+                .buttonStyle(SoftButtonStyle(color: Palette.cyan))
+                .padding(.bottom, 6)
+            }
+
+            HStack {
+                Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
+                Text("أو")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Palette.text3)
+                Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
+            }
+
+            HStack(alignment: .bottom, spacing: 8) {
+                InputField(title: "أنشئ مجموعة جديدة", text: $newGroupName, placeholder: "اسم المجموعة (مثلا: شلة المشي)")
+                Button("أنشئ") {
+                    hideKeyboard()
+                    Task {
+                        if await friends.createGroup(named: newGroupName) {
+                            newGroupName = ""
+                        }
+                    }
+                }
+                .buttonStyle(SoftButtonStyle(color: Palette.pink))
+                .padding(.bottom, 6)
+            }
+
+            if friends.busy {
+                ProgressView().tint(.white)
+                    .frame(maxWidth: .infinity)
             }
         }
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
+        .disabled(!friends.hasName || friends.busy)
+        .opacity(friends.hasName ? 1 : 0.5)
     }
 
-    private var howTo: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("كيف تشتغل؟", systemImage: "questionmark.circle")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            Text("١. اضغط «أرسل كودي للقروب» وأرسله بالقروب.\n٢. لما يرسل صديقك كوده: انسخ رسالته وارجع هنا واضغط «لصق».\n٣. الترتيب يتحدث كل ما أحد يرسل كود جديد، فأرسلوا أكوادكم كل يوم أو آخر الأسبوع.")
-                .font(.system(size: 12, design: .rounded))
-                .foregroundStyle(Palette.text2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard(radius: 18)
+    private func notice(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13, design: .rounded))
+            .foregroundStyle(Color.white.opacity(0.8))
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard(radius: 18, tint: Palette.orange)
     }
 
     @ViewBuilder

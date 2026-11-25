@@ -17,6 +17,18 @@ jobs:
       - name: Install tools
         run: brew install xcodegen ldid
 
+      - name: Cloud config
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
+            printf 'enum CloudSecrets {\n    static let url = "%s"\n    static let anonKey = "%s"\n}\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > Sources/CloudSecrets.swift
+            echo "Cloud: configured"
+          else
+            echo "Cloud: not configured (groups disabled)"
+          fi
+
       - name: Generate Xcode project
         run: xcodegen generate
 

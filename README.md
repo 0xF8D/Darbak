@@ -25,7 +25,7 @@ iOS 16.2+ · iPhone & iPad · by **0xF8D** · Saudi Made
 - **خطوات مباشرة** من «صحتي» (الجوال والساعة)
 - **مستويات** من مبتدئ إلى أسطوري
 - **تحديات** أسبوعية وشهرية
-- **الشلة**: نافس أصحابك على خطوات الأسبوع
+- **الشلة**: مجموعات بكود، وتشوف خطوات أصحابك تتحدث كل دقيقة
 - **دروع** لكل يوم توصل فيه هدفك
 - **ويدجت** وشاشة القفل
 - **السعرات**: حاسبة وسجل يومي
@@ -44,17 +44,17 @@ https://raw.githubusercontent.com/0xF8D/Darbak/main/apps.json
 
 ## الخصوصية
 
-كل بياناتك تبقى في جوالك. ما فيه سيرفر ولا حسابات.
+بياناتك تبقى في جوالك. لو دخلت مجموعة، ينحفظ اسمك ورمزك ومستواك وخطوات أسبوعك بس، وما يشوفها إلا أعضاء مجموعتك. ما فيه حسابات ولا إيميل.
 
 ## البناء
 
-SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`.
+SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`. المجموعات تشتغل على Supabase (`supabase/schema.sql`).
 
 ---
 
 ## English
 
-**Darbak** is a step counter for iPhone & iPad with levels, weekly and monthly challenges, and a friends leaderboard. Steps come from Apple Health (iPhone + Apple Watch). All data stays on your device.
+**Darbak** is a step counter for iPhone & iPad with levels, weekly and monthly challenges, and friend groups (join with an 8-character code, live leaderboard). Steps come from Apple Health (iPhone + Apple Watch). Only your name, emoji, level and weekly steps are shared, and only with your group.
 
 [Download the latest IPA](https://github.com/0xF8D/Darbak/releases/download/latest/Darbak.ipa) and sideload it with AltStore or Sideloadly.
 
