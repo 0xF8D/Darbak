@@ -51,7 +51,7 @@ struct DayDetailView: View {
                             }
                         }
                         .frame(height: 10)
-                        Text(day.steps >= goal ? "وصلت هدفك ✓" : "ناقصك \(Fmt.num(goal - day.steps)) خطوة على الهدف")
+                        Text(day.steps >= goal ? "كفو، وصلت هدفك ✓" : "ناقصك \(Fmt.num(goal - day.steps)) خطوة على الهدف")
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                             .foregroundStyle(day.steps >= goal ? Palette.green : Palette.text2)
                         Text("+\(Fmt.num(Progression.dayXP(day.steps))) XP بهذا اليوم")

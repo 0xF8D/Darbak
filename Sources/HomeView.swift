@@ -195,7 +195,7 @@ struct HomeView: View {
             .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(next.primary)
         } else {
-            Text("حققت كل أهدافك اليوم 👑")
+            Text("فناااان، خلصت كل أهدافك 👑")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(Palette.gold)
         }

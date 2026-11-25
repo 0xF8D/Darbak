@@ -24,7 +24,7 @@ struct BadgesView: View {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    ScreenTitle(title: "التقدم", subtitle: "مستواك وتحدياتك ودروعك")
+                    ScreenTitle(title: "إنجازاتي", subtitle: "مستواك وتحدياتك ودروعك")
 
                     HealthAccessBanner()
 

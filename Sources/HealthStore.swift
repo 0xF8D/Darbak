@@ -50,13 +50,13 @@ struct CelebrationEvent: Identifiable, Equatable {
     var symbol: String? = nil
 
     static func badge(_ tier: BadgeTier) -> CelebrationEvent {
-        CelebrationEvent(title: "درع جديد!", subtitle: "وصلت \(Fmt.num(tier.steps)) خطوة يا وحش 🔥",
+        CelebrationEvent(title: "كفو! جاك درع جديد", subtitle: "وصلت \(Fmt.num(tier.steps)) خطوة يا وحش 🔥",
                          colors: tier.colors, label: tier.label)
     }
 
     static func level(_ level: Int) -> CelebrationEvent {
         let rank = Rank.of(level: level)
-        return CelebrationEvent(title: "مستوى جديد!", subtitle: "صرت مستوى \(Fmt.num(level)) · \(rank.title) ⭐",
+        return CelebrationEvent(title: "مبروك! المستوى الجديد", subtitle: "صرت مستوى \(Fmt.num(level)) · \(rank.title) ⭐",
                                 colors: rank.colors, label: Fmt.num(level))
     }
 

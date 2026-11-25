@@ -24,7 +24,7 @@ struct StatsView: View {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    ScreenTitle(title: "إحصائيات")
+                    ScreenTitle(title: "أرقامي")
 
                     weekSwitcher(week)
 
