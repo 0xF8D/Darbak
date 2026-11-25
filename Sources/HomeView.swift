@@ -55,7 +55,9 @@ struct HomeView: View {
                         hint("ما جتني خطوات. افتح تطبيق الصحة ← صورتك فوق ← التطبيقات ← دربك ← شغل «الكل».")
                     }
 
-                    SaudiMadeFooter()
+                    Text("© 0xF8D")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Palette.text3)
                         .padding(.top, 4)
                 }
                 .padding(.horizontal, 18)

@@ -335,7 +335,7 @@ struct BadgeDetailView: View {
                     CrystalBadge(tier: tier, size: 170, earned: !days.isEmpty)
                         .padding(.top, 34)
 
-                    Text(days.isEmpty ? "لسه ما جبته" : "جبته \(Fmt.num(days.count)) مرة")
+                    Text(days.isEmpty ? "باقي ما جبته" : "جبته \(Fmt.num(days.count)) مرة")
                         .font(.system(size: 24, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
 
