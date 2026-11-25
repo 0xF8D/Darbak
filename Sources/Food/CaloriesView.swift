@@ -4,6 +4,7 @@ import SwiftUI
 
 enum FoodSection: String, CaseIterable, Identifiable {
     case today = "اليوم"
+    case water = "مويتي"
     case recipes = "طبخاتي"
     case ingredients = "مكوناتي"
     case calculator = "حاسبتي"
@@ -35,6 +36,8 @@ struct CaloriesView: View {
                         switch section {
                         case .today:
                             TodayFoodSection(section: $section, showQuickAdd: $showQuickAdd)
+                        case .water:
+                            WaterSection()
                         case .recipes:
                             RecipesSection(editingRecipe: $editingRecipe)
                         case .ingredients:

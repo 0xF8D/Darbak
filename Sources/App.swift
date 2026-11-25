@@ -33,9 +33,13 @@ struct DarbakApp: App {
                 .task {
                     health.start()
                     friends.start()
+                    UpdateChecker.shared.check()
                     Reminder.requestAuthorization()
                 }
-                .onReceive(timer) { _ in health.tick() }
+                .onReceive(timer) { _ in
+                    health.tick()
+                    WaterStore.shared.refreshDay()
+                }
                 .onOpenURL { url in
                     // رابط دعوة: darbak://join/ABCD1234
                     friends.handleURL(url)
@@ -44,6 +48,8 @@ struct DarbakApp: App {
                     if new == .active {
                         health.tick(force: true)
                         Task { await friends.sync(force: true) }
+                        UpdateChecker.shared.check()
+                        WaterStore.shared.refreshDay()
                     }
                     if new == .background {
                         health.pushWidget(force: true)
