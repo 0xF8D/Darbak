@@ -14,6 +14,14 @@ iOS 16.2 وفوق · آيفون وآيباد
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshots/home.png" width="19%" alt="خطواتي">
+  <img src="docs/screenshots/achievements.png" width="19%" alt="إنجازاتي">
+  <img src="docs/screenshots/friends.png" width="19%" alt="الشلة">
+  <img src="docs/screenshots/stats.png" width="19%" alt="أرقامي">
+  <img src="docs/screenshots/settings.png" width="19%" alt="الإعدادات">
+</p>
+
 ---
 
 ## وش يسوي دربك؟

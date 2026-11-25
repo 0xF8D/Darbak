@@ -227,6 +227,7 @@ struct WidgetRing<Center: View>: View {
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .shadow(color: Palette.cyan.opacity(0.5), radius: 5)
+                .environment(\.layoutDirection, .leftToRight)
             center()
         }
         .padding(lineWidth / 2)

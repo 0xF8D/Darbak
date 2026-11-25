@@ -287,6 +287,7 @@ struct WeekDayCircle: View {
                 }
                 .padding(.horizontal, 4)
             }
+            .environment(\.layoutDirection, .leftToRight)
             .frame(width: 42, height: 42)
             .shadow(color: tier?.primary.opacity(0.55) ?? .clear, radius: 6)
             .overlay {
