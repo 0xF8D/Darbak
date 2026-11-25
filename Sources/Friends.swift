@@ -395,6 +395,14 @@ struct FriendsView: View {
     @State private var newGroupName = ""
     @State private var leaveTarget: CloudGroup?
     @State private var kickTarget: KickTarget?
+    @State private var weekMember: WeekSheet?
+
+    struct WeekSheet: Identifiable {
+        let id: String
+        let name: String
+        let emoji: String
+        let days: [Int]
+    }
 
     struct KickTarget {
         let member: GroupMember
@@ -413,7 +421,7 @@ struct FriendsView: View {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    ScreenTitle(title: "الشلة", subtitle: "نافس شلتك على خطوات الأسبوع")
+                    ScreenTitle(title: "الشلة", subtitle: "نافس شلتك على خطوات اليوم")
 
                     if !Cloud.isConfigured {
                         notice("المجموعات مو مفعلة في هذي النسخة.")
@@ -451,6 +459,12 @@ struct FriendsView: View {
                 Task { await friends.leave(g) }
             }
             Button("إلغاء", role: .cancel) {}
+        }
+        .sheet(item: $weekMember) { m in
+            MemberWeekView(name: m.name, emoji: m.emoji, days: m.days)
+                .appEnvironment()
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
         .confirmationDialog(kickTarget.map { "تطلع \($0.member.name) من المجموعة؟" } ?? "",
                             isPresented: Binding(get: { kickTarget != nil }, set: { if !$0 { kickTarget = nil } }),
@@ -548,24 +562,36 @@ struct FriendsView: View {
         let name: String
         let emoji: String
         let level: Int
-        let total: Int
+        let total: Int      // خطوات اليوم
+        let days: [Int]     // الأسبوع كامل (الأحد ← السبت)
         let isMe: Bool
         let current: Bool
         var id: String { member.id }
     }
 
+    /// ترتيب اليوم في مصفوفة الأسبوع (الأحد = ٠)
+    private var todayIndex: Int {
+        let cal = AppCalendar.local
+        let start = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? AppCalendar.startOfToday()
+        let n = cal.dateComponents([.day], from: start, to: AppCalendar.startOfToday()).day ?? 0
+        return min(max(n, 0), 6)
+    }
+
     private func rows(for g: CloudGroup) -> [Row] {
         let week = FriendStore.weekKey
         let myDays = health.week(offset: 0).map { $0.isFuture ? 0 : $0.steps }
+        let t = todayIndex
         return g.members.map { m in
             let me = friends.isMe(m)
             let current = me || m.week == week
-            let total = me ? myDays.reduce(0, +) : (current ? m.days.reduce(0, +) : 0)
+            let days = me ? myDays : (current ? m.days : Array(repeating: 0, count: 7))
+            let total = t < days.count ? days[t] : 0
             return Row(member: m,
                        name: me ? friends.trimmedName : m.name,
                        emoji: me ? friends.emoji : m.emoji,
                        level: me ? health.progress.level.level : m.level,
                        total: total,
+                       days: days,
                        isMe: me,
                        current: current)
         }
@@ -598,6 +624,10 @@ struct FriendsView: View {
 
             codeRow(g)
                 .padding(.bottom, 4)
+
+            Text("ترتيب اليوم · اضغط على أي واحد تشوف أسبوعه")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(Palette.text2)
 
             ForEach(Array(list.enumerated()), id: \.element.id) { i, r in
                 row(r, place: i + 1, leader: leader,
@@ -705,7 +735,7 @@ struct FriendsView: View {
                         .foregroundStyle(Palette.gold)
                 }
                 if king {
-                    Text("ملك القروب 👑")
+                    Text("ملك اليوم 👑")
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(Palette.gold)
                 }
@@ -721,7 +751,7 @@ struct FriendsView: View {
                 if !r.isMe {
                     Text(r.current
                          ? "حدث \(Self.relative.localizedString(for: r.member.updatedAt, relativeTo: Date()))"
-                         : "ما فتح دربك هذا الأسبوع")
+                         : "ما فتح دربك اليوم")
                         .font(.system(size: 10, design: .rounded))
                         .foregroundStyle(Palette.text3)
                 }
@@ -747,6 +777,11 @@ struct FriendsView: View {
             }
         }
         .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            Haptics.tap()
+            weekMember = WeekSheet(id: r.id, name: r.name, emoji: r.emoji, days: r.days)
+        }
     }
 
     // MARK: - إنشاء ودخول
@@ -829,6 +864,67 @@ struct FriendsView: View {
                     try? await Task.sleep(nanoseconds: 2_800_000_000)
                     if friends.toast == t { friends.toast = nil }
                 }
+        }
+    }
+}
+
+// MARK: - أسبوع الشخص (لما تضغط عليه)
+
+struct MemberWeekView: View {
+    let name: String
+    let emoji: String
+    let days: [Int]
+    @EnvironmentObject var health: HealthStore
+    @EnvironmentObject var settings: AppSettings
+
+    var body: some View {
+        let dates = health.week(offset: 0)
+        let top = max(days.max() ?? 0, settings.goal, 1)
+        ZStack {
+            AppBackground()
+            VStack(spacing: 14) {
+                Text(emoji)
+                    .font(.system(size: 44))
+                    .padding(.top, 28)
+                Text(name)
+                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("مجموع الأسبوع \(Fmt.num(days.reduce(0, +))) خطوة")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Palette.text2)
+
+                HStack(alignment: .bottom, spacing: 8) {
+                    ForEach(0..<7, id: \.self) { i in
+                        let v = i < days.count ? days[i] : 0
+                        let future = i < dates.count ? dates[i].isFuture : false
+                        let colors = BadgeTier.highest(for: v)?.colors ?? [Palette.cyan, Palette.blue]
+                        VStack(spacing: 6) {
+                            Text(future ? "–" : Fmt.thousands(v))
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                            Capsule()
+                                .fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+                                .frame(height: max(6, 120 * CGFloat(v) / CGFloat(top)))
+                            Text(i < dates.count ? Fmt.weekday(dates[i].date) : "")
+                                .font(.system(size: 10, design: .rounded))
+                                .foregroundStyle(Palette.text2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .opacity(future ? 0.3 : 1)
+                    }
+                }
+                .frame(height: 170, alignment: .bottom)
+                .padding(16)
+                .glassCard()
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .screenWidth()
         }
     }
 }

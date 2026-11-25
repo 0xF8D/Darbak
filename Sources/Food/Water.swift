@@ -124,7 +124,6 @@ final class WaterStore: ObservableObject {
 struct WaterSection: View {
     @ObservedObject var water = WaterStore.shared
     @State private var custom = ""
-    @State private var customGoal = ""
 
     private let blue = [Palette.cyan, Palette.blue]
 
@@ -134,7 +133,6 @@ struct WaterSection: View {
             quickCard
             entriesCard
             weekCard
-            goalCard
         }
         .onAppear { water.refreshDay() }
     }
@@ -176,7 +174,7 @@ struct WaterSection: View {
             Text(water.total >= water.goal ? "كفو، وصلت هدفك 💧" : "باقي \(Fmt.num(water.remaining)) مل على هدفك")
                 .font(.system(size: 15, weight: .bold, design: .rounded))
                 .foregroundStyle(water.total >= water.goal ? Palette.green : Palette.cyan)
-            Text("العداد يتصفر ١٢ الليل")
+            Text("العداد يتصفر ١٢ الليل · الهدف تغيره من الإعدادات")
                 .font(.system(size: 11, design: .rounded))
                 .foregroundStyle(Palette.text3)
         }
@@ -336,12 +334,19 @@ struct WaterSection: View {
         .padding(16)
         .glassCard()
     }
+}
 
-    // MARK: الهدف
+// MARK: - هدف المويه (في الإعدادات)
 
-    private var goalCard: some View {
+struct WaterGoalCard: View {
+    @ObservedObject var water = WaterStore.shared
+    @State private var customGoal = ""
+
+    private let blue = [Palette.cyan, Palette.blue]
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("هدفك اليومي", systemImage: "target")
+            Label("هدف المويه اليومي", systemImage: "drop.fill")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
             HStack(spacing: 8) {

@@ -9,31 +9,14 @@ final class AppSettings: ObservableObject {
     private let d = UserDefaults.standard
 
     @Published var goal: Int { didSet { d.set(goal, forKey: "goal") } }
-    @Published var reminderEnabled: Bool { didSet { d.set(reminderEnabled, forKey: "reminderEnabled") } }
-    @Published var reminderHour: Int { didSet { d.set(reminderHour, forKey: "reminderHour") } }
-    @Published var reminderMinute: Int { didSet { d.set(reminderMinute, forKey: "reminderMinute") } }
     @Published var milestoneHaptics: Bool { didSet { d.set(milestoneHaptics, forKey: "milestoneHaptics") } }
 
     init() {
         let g = d.integer(forKey: "goal")
         goal = Self.goals.contains(g) ? g : 8_000
-        reminderEnabled = d.object(forKey: "reminderEnabled") as? Bool ?? true
-        reminderHour = d.object(forKey: "reminderHour") as? Int ?? 20
-        reminderMinute = d.object(forKey: "reminderMinute") as? Int ?? 0
         milestoneHaptics = d.object(forKey: "milestoneHaptics") as? Bool ?? true
     }
 
-    var reminderTime: Date {
-        get {
-            AppCalendar.local.date(bySettingHour: reminderHour, minute: reminderMinute, second: 0,
-                                    of: Date()) ?? Date()
-        }
-        set {
-            let c = AppCalendar.local.dateComponents([.hour, .minute], from: newValue)
-            reminderHour = c.hour ?? 20
-            reminderMinute = c.minute ?? 0
-        }
-    }
 }
 
 struct SettingsView: View {
@@ -50,9 +33,9 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         goalCard
+                        WaterGoalCard()
                         healthCard
                         toggles
-                        reminderCard
                         walkCard
                         about
                     }
@@ -104,7 +87,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            Text("أقل هدف ٧ آلاف، والتذكير يمشي على هدفك.")
+            Text("أقل هدف ٧ آلاف، والإشعارات تمشي على هدفك.")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text3)
         }
@@ -126,31 +109,6 @@ struct SettingsView: View {
             }
         }
         .tint(Palette.cyan)
-        .padding(16)
-        .glassCard()
-    }
-
-    private var reminderCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Toggle(isOn: $settings.reminderEnabled) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("🔔 نذكرك بخطواتك")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-            }
-            .tint(Palette.cyan)
-            if settings.reminderEnabled {
-                HStack {
-                    Text("الوقت")
-                        .font(.system(size: 14, design: .rounded))
-                        .foregroundStyle(Palette.text2)
-                    Spacer()
-                    DatePicker("", selection: $settings.reminderTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                }
-            }
-        }
         .padding(16)
         .glassCard()
     }
