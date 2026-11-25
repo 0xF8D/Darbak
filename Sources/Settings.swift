@@ -185,7 +185,7 @@ struct SettingsView: View {
             Text("دربك")
                 .font(.system(size: 20, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
-            Text("عداد خطوات بثيم نيون: مستويات وتحديات وتنافس مع شلتك")
+            Text("عداد خطوات: مستويات وتحديات وتنافس مع شلتك")
                 .font(.system(size: 13, design: .rounded))
                 .foregroundStyle(Palette.text2)
                 .multilineTextAlignment(.center)
