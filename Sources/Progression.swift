@@ -14,39 +14,45 @@ import SwiftUI
 
 // MARK: - المستوى
 
-struct Rank {
+/// الرتب: مبتدئ (١-٩)، متوسط (١٠-٢٩)، متقدم (٣٠-٤٩)، بطل (٥٠-٧٩)، أسطوري (٨٠-١٠٠)
+struct Rank: Identifiable {
     let title: String
     let colors: [Color]
+    let from: Int
+    let to: Int
 
+    var id: Int { from }
     var primary: Color { colors[0] }
     var gradient: LinearGradient {
         LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
-    /// (من مستوى، الرتبة)
-    static let all: [(Int, Rank)] = [
-        (1, Rank(title: "مبتدئ", colors: [Color(hex: 0x8FA6D8), Color(hex: 0x4D6BA8)])),
-        (5, Rank(title: "ماشي", colors: [Color(hex: 0x22E1FF), Color(hex: 0x1E8BFF)])),
-        (10, Rank(title: "مستكشف", colors: [Color(hex: 0x4D8BFF), Color(hex: 0x6A4DFF)])),
-        (20, Rank(title: "رحال", colors: [Color(hex: 0xA66BFF), Color(hex: 0xD04DFF)])),
-        (30, Rank(title: "مغامر", colors: [Color(hex: 0xFF4FD8), Color(hex: 0xFF7A45)])),
-        (45, Rank(title: "بطل", colors: [Color(hex: 0xFF8A3D), Color(hex: 0xFF3D5A)])),
-        (60, Rank(title: "أسطورة", colors: [Color(hex: 0xFFD066), Color(hex: 0xD99117)]))
+    func contains(_ level: Int) -> Bool { level >= from && level <= to }
+
+    static let all: [Rank] = [
+        Rank(title: "مبتدئ", colors: [Color(hex: 0x22E1FF), Color(hex: 0x1E8BFF)], from: 1, to: 9),
+        Rank(title: "متوسط", colors: [Color(hex: 0x4D8BFF), Color(hex: 0x6A4DFF)], from: 10, to: 29),
+        Rank(title: "متقدم", colors: [Color(hex: 0xA66BFF), Color(hex: 0xD04DFF)], from: 30, to: 49),
+        Rank(title: "بطل", colors: [Color(hex: 0xFF4FD8), Color(hex: 0xFF7A45)], from: 50, to: 79),
+        Rank(title: "أسطوري", colors: [Color(hex: 0xFFD066), Color(hex: 0xD99117)], from: 80, to: LevelInfo.maxLevel)
     ]
 
     static func of(level: Int) -> Rank {
-        all.last { level >= $0.0 }?.1 ?? all[0].1
+        all.last { level >= $0.from } ?? all[0]
     }
 }
 
 struct LevelInfo: Equatable {
+    static let maxLevel = 100
+
     let level: Int
     let xp: Int        // مجموع نقاطك
     let into: Int      // نقاطك داخل المستوى الحالي
     let need: Int      // كم يحتاج المستوى الحالي عشان تطلع للي بعده
 
-    var fraction: Double { need > 0 ? min(Double(into) / Double(need), 1) : 0 }
-    var remaining: Int { max(need - into, 0) }
+    var isMax: Bool { level >= Self.maxLevel }
+    var fraction: Double { isMax ? 1 : (need > 0 ? min(Double(into) / Double(need), 1) : 0) }
+    var remaining: Int { isMax ? 0 : max(need - into, 0) }
     var rank: Rank { Rank.of(level: level) }
 
     /// كم XP تحتاج عشان تطلع من هذا المستوى
@@ -56,7 +62,7 @@ struct LevelInfo: Equatable {
         let total = max(xp, 0)
         var lvl = 1
         var left = total
-        while left >= Self.cost(of: lvl) && lvl < 999 {
+        while lvl < Self.maxLevel && left >= Self.cost(of: lvl) {
             left -= Self.cost(of: lvl)
             lvl += 1
         }

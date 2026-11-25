@@ -290,7 +290,7 @@ struct FriendsView: View {
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                Text("⭐ مستوى \(Fmt.num(me.level)) · \(Rank.of(level: me.level).title)")
+                Text("مستوى \(Fmt.num(me.level)) · \(Rank.of(level: me.level).title)")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(Palette.gold)
             }

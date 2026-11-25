@@ -56,7 +56,7 @@ struct CelebrationEvent: Identifiable, Equatable {
 
     static func level(_ level: Int) -> CelebrationEvent {
         let rank = Rank.of(level: level)
-        return CelebrationEvent(title: "مبروك! المستوى الجديد", subtitle: "صرت مستوى \(Fmt.num(level)) · \(rank.title) ⭐",
+        return CelebrationEvent(title: "مبروك! المستوى الجديد", subtitle: "صرت مستوى \(Fmt.num(level)) · \(rank.title)",
                                 colors: rank.colors, label: Fmt.num(level))
     }
 
