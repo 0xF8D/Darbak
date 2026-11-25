@@ -81,7 +81,7 @@ struct RootView: View {
                 .tabItem { Label("التقدم", systemImage: "star.circle.fill") }
                 .tag(AppTab.progress)
             FriendsView()
-                .tabItem { Label("الربع", systemImage: "person.3.fill") }
+                .tabItem { Label("الشلة", systemImage: "person.3.fill") }
                 .tag(AppTab.friends)
             CaloriesView()
                 .tabItem { Label("السعرات", systemImage: "fork.knife") }
@@ -93,7 +93,7 @@ struct RootView: View {
         .tint(Palette.cyan)
         .overlay { CelebrationHost() }
         .onChange(of: friends.importTick) { _ in
-            // فتحت رابط صديق: نوديك لصفحة الربع
+            // فتحت رابط صديق: نوديك لصفحة الشلة
             tab = .friends
         }
     }

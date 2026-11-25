@@ -1,6 +1,6 @@
 // دربك — © 0xF8D
 //
-// منافسة الربع (بدون سيرفر):
+// منافسة الشلة (بدون سيرفر):
 // كل واحد يرسل «كوده» (رابط فيه اسمه وخطواته هالأسبوع ومستواه) بالقروب.
 // تنسخ الرسالة وتضغط «الصق كود صديق»، أو تفتح الرابط، ويطلع بالترتيب.
 // الأرقام تتحدث كل ما صديقك يرسل كود جديد.
@@ -85,7 +85,7 @@ final class FriendStore: ObservableObject {
     @Published var name: String { didSet { d.set(name, forKey: "profileName") } }
     @Published var emoji: String { didSet { d.set(emoji, forKey: "profileEmoji") } }
     @Published private(set) var friends: [FriendCard] = []
-    /// يزيد كل ما انضاف/تحدث صديق (عشان ننقلك لصفحة الربع)
+    /// يزيد كل ما انضاف/تحدث صديق (عشان ننقلك لصفحة الشلة)
     @Published private(set) var importTick = 0
     @Published var toast: String?
 
@@ -137,7 +137,7 @@ final class FriendStore: ObservableObject {
         👟 تحداني في دربك!
         \(me.emoji) \(me.name): \(Fmt.num(me.total)) خطوة هذا الأسبوع · مستوى \(Fmt.num(me.level))
 
-        عشان تضيفني: انسخ الرسالة كاملة، وافتح دربك ← الربع ← اضغط «لصق».
+        عشان تضيفني: انسخ الرسالة كاملة، وافتح دربك ← الشلة ← اضغط «لصق».
         \(me.link)
         """
     }
@@ -163,7 +163,7 @@ final class FriendStore: ObservableObject {
         } else {
             friends.append(card)
             save()
-            show("انضاف \(card.emoji) \(card.name) للربع 🎉")
+            show("انضاف \(card.emoji) \(card.name) للشلة 🎉")
         }
         Haptics.success()
     }
@@ -210,7 +210,7 @@ struct FriendsView: View {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    ScreenTitle(title: "الربع", subtitle: "نافس ربعك على خطوات الأسبوع")
+                    ScreenTitle(title: "الشلة", subtitle: "نافس شلتك على خطوات الأسبوع")
 
                     if editingProfile || friends.name.trimmingCharacters(in: .whitespaces).isEmpty {
                         profileEditor
@@ -244,7 +244,7 @@ struct FriendsView: View {
             Text("عرف بنفسك")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            InputField(title: "اسمك (يطلع لربعك)", text: $friends.name, placeholder: "مثلا: أبو فهد")
+            InputField(title: "اسمك (يطلع لشلتك)", text: $friends.name, placeholder: "مثلا: أبو فهد")
             Text("اختار رمزك")
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(Palette.text2)
@@ -332,7 +332,7 @@ struct FriendsView: View {
             }
 
             if board.count == 1 {
-                Text("لسه ما أضفت أحد. أرسل كودك لربعك وخلهم يرسلون لك أكوادهم 👇")
+                Text("لسه ما أضفت أحد. أرسل كودك لشلتك وخلهم يرسلون لك أكوادهم 👇")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(Palette.text2)
                     .padding(.top, 8)
@@ -404,7 +404,7 @@ struct FriendsView: View {
                 Button(role: .destructive) {
                     friends.remove(c.id)
                 } label: {
-                    Label("احذف من الربع", systemImage: "trash")
+                    Label("احذف من الشلة", systemImage: "trash")
                 }
             }
         }
@@ -415,7 +415,7 @@ struct FriendsView: View {
     private var actions: some View {
         VStack(spacing: 12) {
             ShareLink(item: friends.shareText()) {
-                Label("أرسل كودي لربعي", systemImage: "square.and.arrow.up")
+                Label("أرسل كودي لشلتي", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(NeonButtonStyle(colors: [Palette.violet, Palette.pink]))
 
@@ -492,7 +492,7 @@ struct FriendsView: View {
             Label("كيف تشتغل؟", systemImage: "questionmark.circle")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text("١. اضغط «أرسل كودي لربعي» وأرسله بالقروب.\n٢. لما يرسل صديقك كوده: انسخ رسالته وارجع هنا واضغط «لصق».\n٣. الترتيب يتحدث كل ما أحد يرسل كود جديد، فأرسلوا أكوادكم كل يوم أو آخر الأسبوع.")
+            Text("١. اضغط «أرسل كودي لشلتي» وأرسله بالقروب.\n٢. لما يرسل صديقك كوده: انسخ رسالته وارجع هنا واضغط «لصق».\n٣. الترتيب يتحدث كل ما أحد يرسل كود جديد، فأرسلوا أكوادكم كل يوم أو آخر الأسبوع.")
                 .font(.system(size: 12, design: .rounded))
                 .foregroundStyle(Palette.text2)
                 .fixedSize(horizontal: false, vertical: true)
