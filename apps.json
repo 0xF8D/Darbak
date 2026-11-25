@@ -8,13 +8,13 @@
       "developerName": "0xF8D",
       "subtitle": "عداد خطوات سعودي",
       "localizedDescription": "عداد خطوات: مستويات وتحديات وتنافس مع شلتك. يقرأ من «صحتي» والساعة، وفيه ويدجت وحاسبة سعرات. المطور: 0xF8D 🇸🇦 Saudi Made",
-      "iconURL": "https://raw.githubusercontent.com/0xF8D/steps/main/icon.png",
+      "iconURL": "https://raw.githubusercontent.com/0xF8D/Darbak/main/icon.png",
       "tintColor": "22E1FF",
       "versions": [
         {
           "version": "2.3",
           "date": "2026-11-25",
-          "downloadURL": "https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa",
+          "downloadURL": "https://github.com/0xF8D/Darbak/releases/download/latest/Darbak.ipa",
           "size": 3000000,
           "minOSVersion": "16.2"
         }
