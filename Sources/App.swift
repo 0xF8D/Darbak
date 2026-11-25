@@ -34,6 +34,7 @@ struct DarbakApp: App {
                     health.start()
                     friends.start()
                     UpdateChecker.shared.check()
+                    RemoteConfig.shared.refresh(force: true)
                     Reminder.requestAuthorization()
                 }
                 .onReceive(timer) { _ in
@@ -49,6 +50,7 @@ struct DarbakApp: App {
                         health.tick(force: true)
                         Task { await friends.sync(force: true) }
                         UpdateChecker.shared.check()
+                        RemoteConfig.shared.refresh()
                         WaterStore.shared.refreshDay()
                     }
                     if new == .background {
@@ -103,6 +105,7 @@ struct RootView: View {
         }
         .tint(Palette.cyan)
         .overlay { CelebrationHost() }
+        .overlay { ForceUpdateGate() }
         .onChange(of: friends.importTick) { _ in
             // فتحت رابط دعوة: نوديك لصفحة الشلة
             tab = .friends

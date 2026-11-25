@@ -49,7 +49,7 @@ https://raw.githubusercontent.com/0xF8D/Darbak/main/apps.json
 
 ## البناء
 
-SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`. المجموعات تشتغل على Supabase (`supabase/schema.sql`).
+SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`. المجموعات تشتغل على Supabase (`supabase/schema.sql` ثم `supabase/admin.sql`).
 
 ---
 

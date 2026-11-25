@@ -23,6 +23,8 @@ struct HomeView: View {
 
                     UpdateBanner()
 
+                    AnnouncementBanner()
+
                     HealthAccessBanner()
 
                     StepRing(steps: steps, goal: goal)

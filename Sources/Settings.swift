@@ -1,6 +1,7 @@
 // دربك — © 0xF8D
 
 import SwiftUI
+import UIKit
 
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -23,7 +24,9 @@ struct SettingsView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var walk: WalkMode
     @EnvironmentObject var health: HealthStore
+    @EnvironmentObject var friends: FriendStore
     @Environment(\.openURL) private var openURL
+    @State private var showAdmin = false
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -37,6 +40,9 @@ struct SettingsView: View {
                         healthCard
                         toggles
                         walkCard
+                        if friends.isAdmin {
+                            adminCard
+                        }
                         about
                     }
                     .padding(.horizontal, 18)
@@ -44,6 +50,7 @@ struct SettingsView: View {
                     .padding(.vertical, 12)
                 }
             }
+            .task { await friends.checkAdmin() }
             .navigationTitle("الإعدادات")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -206,6 +213,63 @@ struct SettingsView: View {
         }
     }
 
+    private var adminCard: some View {
+        Button {
+            Haptics.tap()
+            showAdmin = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Palette.gold)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("لوحة الأدمن")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("الإحصائيات، التحديث الإجباري، رسالة للكل، الناس والمجموعات")
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(Palette.text2)
+                }
+                Spacer()
+                Image(systemName: "chevron.left")
+                    .foregroundStyle(Palette.text3)
+            }
+            .padding(16)
+            .glassCard(tint: Palette.gold)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showAdmin) {
+            AdminView()
+                .appEnvironment()
+        }
+    }
+
+    /// رقم حسابك (مو سر). تحتاجه عشان تخلي نفسك أدمن في Supabase
+    private var accountRow: some View {
+        VStack(spacing: 4) {
+            Text("رقم حسابك")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundStyle(Palette.text3)
+            Button {
+                UIPasteboard.general.string = friends.myID
+                Haptics.tap()
+            } label: {
+                HStack(spacing: 6) {
+                    Text(friends.myID)
+                        .font(.system(size: 10, design: .monospaced))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 10))
+                }
+                .foregroundStyle(Palette.text3)
+                .environment(\.layoutDirection, .leftToRight)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, 6)
+    }
+
     private var about: some View {
         VStack(spacing: 8) {
             Image(systemName: "hexagon.fill")
@@ -228,6 +292,7 @@ struct SettingsView: View {
                 .foregroundStyle(LinearGradient(colors: [Palette.cyan, Palette.violet], startPoint: .leading, endPoint: .trailing))
             SaudiMadeBadge()
                 .padding(.vertical, 6)
+            accountRow
             Text("© 2026 0xF8D — جميع الحقوق محفوظة")
                 .font(.system(size: 11, design: .rounded))
                 .foregroundStyle(Palette.text3)

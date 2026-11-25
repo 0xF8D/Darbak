@@ -20,6 +20,9 @@ enum Cloud {
         !CloudSecrets.url.isEmpty && !CloudSecrets.anonKey.isEmpty
     }
 
+    /// السيرفر يقبل رقم النسخة؟ (لو ما انضاف admin.sql يرجع false ونكمل بدونه)
+    static var versionSupported = true
+
     static func call(_ fn: String, _ params: [String: Any]) async throws -> Data {
         try await call(fn, body: try JSONSerialization.data(withJSONObject: params))
     }
@@ -64,6 +67,7 @@ enum Cloud {
         case "name_required": return "اكتب اسمك أول"
         case "not_owner": return "صاحب المجموعة بس يقدر يطلع أحد"
         case "not_configured": return "المجموعات مو مفعلة في هذي النسخة"
+        case "not_admin": return "هذي للأدمن بس"
         default: return "صار خطأ، جرب مرة ثانية"
         }
     }
@@ -118,6 +122,9 @@ final class FriendStore: ObservableObject {
     @Published private(set) var busy = false
     @Published private(set) var offline = false
     @Published private(set) var lastSync: Date?
+    /// صلاحية الأدمن: السيرفر هو اللي يقرر (جدول darbak_admins)
+    @Published private(set) var isAdmin = false
+    private var adminChecked = false
     /// يزيد لما تفتح رابط مجموعة (عشان ننقلك لصفحة الشلة)
     @Published private(set) var importTick = 0
     @Published var pendingCode = ""
@@ -202,7 +209,7 @@ final class FriendStore: ObservableObject {
         guard let plan else { return }
         do {
             if plan.0 {
-                _ = try await Cloud.call("darbak_save_profile", body: plan.1)
+                try await saveProfile(plan.1)
                 await MainActor.run {
                     self.lastPush = Date()
                     self.dirty = false
@@ -250,6 +257,40 @@ final class FriendStore: ObservableObject {
         }
     }
 
+    /// يحفظ بروفايلك. لو السيرفر قديم (ما يعرف رقم النسخة) نعيد بدونه
+    private func saveProfile(_ payload: Data) async throws {
+        do {
+            _ = try await Cloud.call("darbak_save_profile", body: payload)
+        } catch let e as Cloud.Failure where e.code.contains("Could not find the function") && Cloud.versionSupported {
+            Cloud.versionSupported = false
+            _ = try await Cloud.call("darbak_save_profile", body: Self.withoutVersion(payload))
+        }
+        if !adminChecked {
+            adminChecked = true
+            await checkAdmin()
+        }
+    }
+
+    private static func withoutVersion(_ data: Data) -> Data {
+        guard var obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return data }
+        obj.removeValue(forKey: "p_version")
+        return (try? JSONSerialization.data(withJSONObject: obj)) ?? data
+    }
+
+    // MARK: الأدمن
+
+    func checkAdmin() async {
+        guard Cloud.isConfigured else { return }
+        guard let data = try? await Cloud.call("darbak_is_admin", auth()) else { return }
+        let value = ((try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)) as? Bool) ?? false
+        await MainActor.run { self.isAdmin = value }
+    }
+
+    /// أوامر الأدمن (السيرفر يتأكد إنك أدمن قبل ما ينفذ)
+    func adminCall(_ fn: String, _ extra: [String: Any] = [:]) async throws -> Data {
+        try await Cloud.call(fn, auth().merging(extra) { _, new in new })
+    }
+
     private func auth() -> [String: Any] {
         ["p_id": myID, "p_secret": secret]
     }
@@ -257,7 +298,7 @@ final class FriendStore: ObservableObject {
     /// بياناتك جاهزة للإرسال (JSON)
     private func profilePayload() -> Data {
         let h = HealthStore.shared
-        let params: [String: Any] = [
+        var params: [String: Any] = [
             "p_id": myID,
             "p_secret": secret,
             "p_name": trimmedName,
@@ -266,6 +307,9 @@ final class FriendStore: ObservableObject {
             "p_week_start": Self.weekKey,
             "p_days": h.week(offset: 0).map { $0.isFuture ? 0 : $0.steps }
         ]
+        if Cloud.versionSupported {
+            params["p_version"] = UpdateChecker.shared.current
+        }
         return (try? JSONSerialization.data(withJSONObject: params)) ?? Data()
     }
 
@@ -343,7 +387,7 @@ final class FriendStore: ObservableObject {
         }
         var ok = false
         do {
-            _ = try await Cloud.call("darbak_save_profile", body: payload)
+            try await saveProfile(payload)
             await MainActor.run {
                 self.lastPush = Date()
                 self.dirty = false
