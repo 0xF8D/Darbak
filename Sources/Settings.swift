@@ -196,6 +196,14 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            if let err = health.authError, health.access != .ok {
+                Text("رد الجوال: \(err)")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(Palette.text3)
+                    .textSelection(.enabled)
+                    .environment(\.layoutDirection, .leftToRight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             if health.access == .noHistory || health.access == .blocked {
                 HStack(spacing: 8) {
                     if health.access == .noHistory {

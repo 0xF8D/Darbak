@@ -73,6 +73,8 @@ final class HealthStore: ObservableObject {
     @Published private(set) var now = Date()
     @Published private(set) var isLoading = true
     @Published private(set) var errorMessage: String?
+    /// رد iOS على طلب إذن الصحة (لو فيه خطأ): يوضح السبب بالضبط
+    @Published private(set) var authError: String?
     @Published private(set) var access: HealthAccess = .checking
     @Published private(set) var progress = ProgressState.empty
     @Published private(set) var liveDistanceM = 0.0
@@ -175,10 +177,12 @@ final class HealthStore: ObservableObject {
                 guard let self else { return }
                 if let error {
                     self.errorMessage = error.localizedDescription
+                    self.authError = error.localizedDescription
                     self.authFailed = true
                     self.isLoading = false
                 } else {
                     self.authFailed = false
+                    self.authError = nil
                 }
                 self.healthReady = true
                 self.startQuery()
