@@ -6,7 +6,7 @@
 
 عداد خطوات: مستويات وتحديات وتنافس مع شلتك
 
-[![Download](https://img.shields.io/badge/Download-Darbak.ipa-22E1FF?style=for-the-badge)](https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa)
+[![Download](https://img.shields.io/badge/Download-Darbak.ipa-22E1FF?style=for-the-badge)](https://github.com/0xF8D/Darbak/releases/download/latest/Darbak.ipa)
 
 iOS 16.2+ · iPhone & iPad · by **0xF8D** · Saudi Made
 
@@ -32,14 +32,14 @@ iOS 16.2+ · iPhone & iPad · by **0xF8D** · Saudi Made
 
 ## التثبيت
 
-1. حمّل [Darbak.ipa](https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa)
+1. حمّل [Darbak.ipa](https://github.com/0xF8D/Darbak/releases/download/latest/Darbak.ipa)
 2. ثبته بأي برنامج تثبيت (AltStore أو Sideloadly)
 3. اسمح للتطبيق يقرأ من «صحتي»
 
 مصدر AltStore:
 
 ```
-https://raw.githubusercontent.com/0xF8D/steps/main/apps.json
+https://raw.githubusercontent.com/0xF8D/Darbak/main/apps.json
 ```
 
 ## الخصوصية
@@ -56,7 +56,7 @@ SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل �
 
 **Darbak** is a step counter for iPhone & iPad with levels, weekly and monthly challenges, and a friends leaderboard. Steps come from Apple Health (iPhone + Apple Watch). All data stays on your device.
 
-[Download the latest IPA](https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa) and sideload it with AltStore or Sideloadly.
+[Download the latest IPA](https://github.com/0xF8D/Darbak/releases/download/latest/Darbak.ipa) and sideload it with AltStore or Sideloadly.
 
 ---
 
