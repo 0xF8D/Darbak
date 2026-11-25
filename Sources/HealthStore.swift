@@ -3,7 +3,12 @@
 // مصادر الخطوات:
 // 1) HealthKit: السجل الكامل (الجوال + الساعة) — يتحدث على دفعات
 // 2) CoreMotion (عداد الجوال): تحديث مباشر كل ثانيتين وأنت تمشي
-// ناخذ الأكبر بينهم لكل يوم، فالرقم ما يعلق ولا يضيع السجل القديم.
+// الأيام الماضية: رقم الصحة هو المعتمد (نفس اللي يطلع في تطبيق صحتي، يدمج الجوال والساعة
+// بدون تكرار). عداد الجوال بس احتياط لو الصحة ما عندها شي لذاك اليوم.
+// اليوم: ناخذ الأكبر بين الصحة والعداد المباشر عشان الرقم ما يتأخر.
+//
+// السجل يتقرا من جديد كل ما تفتح التطبيق، وكل ما الصحة تقول فيه بيانات جديدة
+// (مثلاً الساعة زامنت متأخر)، وأول ما ينفتح قفل الجوال لو القراية فشلت وهو مقفول.
 
 import Foundation
 import HealthKit
@@ -65,6 +70,9 @@ final class HealthStore: ObservableObject {
     private var liveSteps = 0
     private var activeDay = Date.distantPast
     private var collectionQuery: HKStatisticsCollectionQuery?
+    private var queryGeneration = 0
+    private var queryFailed = false
+    private var lastRecentRefresh = Date.distantPast
     private var healthReady = false
     private var hkAnswered = false
     private var authFailed = false
@@ -92,6 +100,25 @@ final class HealthStore: ObservableObject {
                 DispatchQueue.main.async { self?.settingsChanged() }
             }
             .store(in: &bag)
+
+        // الصحة مشفرة والجوال مقفول: لو القراية فشلت نعيدها أول ما ينفتح القفل
+        NotificationCenter.default
+            .publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async { self?.reloadHealth() }
+            }
+            .store(in: &bag)
+    }
+
+    /// يعيد قراءة الصحة: السجل كامل لو آخر قراية فشلت، وإلا آخر أسبوعين بس (أخف)
+    func reloadHealth(full: Bool = false) {
+        guard healthReady else { return }
+        if full || queryFailed || hkSteps.isEmpty {
+            startQuery()
+        } else {
+            refreshRecent()
+        }
+        refreshExtras()
     }
 
     // MARK: - Start
@@ -188,6 +215,12 @@ final class HealthStore: ObservableObject {
         // رجع للتطبيق (يمكن فعّل الإذن من الصحة): نعيد قراءة السجل
         if force && healthReady && (access == .noHistory || access == .blocked) {
             retryHealth()
+        } else if force {
+            // كل ما تفتح التطبيق نقرا الأيام الأخيرة من الصحة من جديد،
+            // عشان أي خطوات وصلت متأخر (الساعة مثلاً) تنحسب
+            reloadHealth()
+        } else if Date().timeIntervalSince(lastRecentRefresh) > 120 {
+            reloadHealth()
         }
         if force { recompute() }
         pushWidget(force: force)
@@ -203,6 +236,9 @@ final class HealthStore: ObservableObject {
 
     private func startQuery() {
         if let collectionQuery { store.stop(collectionQuery) }
+        queryGeneration += 1
+        let gen = queryGeneration
+        lastRecentRefresh = Date()
 
         let cal = AppCalendar.local
         let todayStart = cal.startOfDay(for: Date())
@@ -217,39 +253,77 @@ final class HealthStore: ObservableObject {
             intervalComponents: DateComponents(day: 1)
         )
         q.initialResultsHandler = { [weak self] _, results, error in
-            self?.handle(results, error)
+            self?.handle(results, error, gen: gen)
         }
         q.statisticsUpdateHandler = { [weak self] _, _, results, error in
-            self?.handle(results, error)
+            self?.handle(results, error, gen: gen)
         }
         store.execute(q)
         collectionQuery = q
     }
 
-    private func handle(_ results: HKStatisticsCollection?, _ error: Error?) {
+    private static func dailyMap(_ results: HKStatisticsCollection) -> [Date: Int] {
         var map: [Date: Int] = [:]
-        let ok = results != nil
-        let message = error?.localizedDescription
-        if let results {
-            let cal = AppCalendar.local
-            for s in results.statistics() {
-                let v = s.sumQuantity()?.doubleValue(for: .count()) ?? 0
-                if v > 0 { map[cal.startOfDay(for: s.startDate)] = Int(v.rounded()) }
-            }
+        let cal = AppCalendar.local
+        for s in results.statistics() {
+            let v = s.sumQuantity()?.doubleValue(for: .count()) ?? 0
+            if v > 0 { map[cal.startOfDay(for: s.startDate)] = Int(v.rounded()) }
         }
+        return map
+    }
+
+    private func handle(_ results: HKStatisticsCollection?, _ error: Error?, gen: Int) {
+        let map = results.map(Self.dailyMap)
+        let message = error?.localizedDescription
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            if ok {
+            guard let self, gen == self.queryGeneration else { return }
+            if let map {
                 self.hkSteps = map
                 self.errorMessage = nil
-            } else if let message {
-                self.errorMessage = message
+                self.queryFailed = false
+            } else {
+                // غالبًا الجوال مقفول (الصحة مشفرة). نخلي آخر أرقام صحيحة ونعيد المحاولة لاحقًا
+                if let message { self.errorMessage = message }
+                self.queryFailed = true
             }
             self.hkAnswered = true
             self.isLoading = false
             self.streakKey = ""
             self.recompute()
         }
+    }
+
+    /// قراية سريعة لآخر ١٤ يوم من الصحة، تستبدل أرقام هذي الأيام بالأرقام الجديدة
+    private func refreshRecent() {
+        guard healthReady else { return }
+        lastRecentRefresh = Date()
+        let cal = AppCalendar.local
+        let todayStart = cal.startOfDay(for: Date())
+        guard let from = cal.date(byAdding: .day, value: -13, to: todayStart) else { return }
+        let gen = queryGeneration
+        let predicate = HKQuery.predicateForSamples(withStart: from, end: nil, options: [])
+        let q = HKStatisticsCollectionQuery(
+            quantityType: stepType,
+            quantitySamplePredicate: predicate,
+            options: .cumulativeSum,
+            anchorDate: todayStart,
+            intervalComponents: DateComponents(day: 1)
+        )
+        q.initialResultsHandler = { [weak self] _, results, _ in
+            guard let results else { return }   // فشل (الجوال مقفول): نخلي القديم
+            let map = Self.dailyMap(results)
+            DispatchQueue.main.async {
+                guard let self, gen == self.queryGeneration else { return }
+                var merged = self.hkSteps.filter { $0.key < from }
+                merged.merge(map) { _, new in new }
+                if merged != self.hkSteps {
+                    self.hkSteps = merged
+                    self.streakKey = ""
+                    self.recompute()
+                }
+            }
+        }
+        store.execute(q)
     }
 
     private func startObserver() {
@@ -260,6 +334,8 @@ final class HealthStore: ObservableObject {
                 completion()
                 return
             }
+            // فيه خطوات جديدة انحفظت بالصحة (ممكن لأيام سابقة لو الساعة زامنت متأخر)
+            DispatchQueue.main.async { self.reloadHealth() }
             Task {
                 await self.backgroundRefresh()
                 completion()
@@ -397,10 +473,13 @@ final class HealthStore: ObservableObject {
 
     private func recompute() {
         var m = hkSteps
-        for (d, n) in pedSteps where n > (m[d] ?? 0) {
+        let t = today
+        // الأيام الماضية: الصحة هي المرجع. العداد بس لو الصحة ما عندها رقم لذاك اليوم
+        for (d, n) in pedSteps where (m[d] ?? 0) == 0 && n > 0 {
             m[d] = n
         }
-        let t = today
+        // اليوم: الأكبر (الصحة تتأخر شوي، والعداد مباشر)
+        if let p = pedSteps[t], p > (m[t] ?? 0) { m[t] = p }
         if liveDay == t, liveSteps > (m[t] ?? 0) {
             m[t] = liveSteps
         }
