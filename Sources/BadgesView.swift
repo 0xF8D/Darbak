@@ -1,6 +1,9 @@
 // دربك — © 0xF8D
 //
-// الترتيب:
+// صفحة «التقدم»:
+//  [ مستواك + XP ]
+//  [ تحديات الأسبوع ] [ تحديات الشهر ]
+//  الدروع:
 //  [ 7K ] [ 8K ]
 //  [ 9K ] [ 10K ]
 //  [ 👑 أفضل يوم لك — بعرض الصف ]
@@ -21,9 +24,27 @@ struct BadgesView: View {
             AppBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    ScreenTitle(title: "الدروع", subtitle: "كل يوم توصل فيه الرقم ينحسب لك درع")
+                    ScreenTitle(title: "التقدم", subtitle: "مستواك وتحدياتك ودروعك")
 
                     HealthAccessBanner()
+
+                    LevelCard(level: health.progress.level, todayXP: health.progress.todayXP)
+
+                    ChallengesCard(title: "تحديات الأسبوع", challenges: health.progress.week,
+                                   ends: health.progress.weekEnd, tint: Palette.cyan)
+
+                    ChallengesCard(title: "تحديات الشهر", challenges: health.progress.month,
+                                   ends: health.progress.monthEnd, tint: Palette.violet)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("الدروع")
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("كل يوم توصل فيه الرقم ينحسب لك درع (+٢٥ XP)")
+                            .font(.system(size: 13, design: .rounded))
+                            .foregroundStyle(Palette.text2)
+                    }
+                    .padding(.top, 8)
 
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(BadgeTier.all) { tier in
@@ -33,7 +54,7 @@ struct BadgesView: View {
 
                     bestDayCard
 
-                    streakCard
+                    xpRules
                 }
                 .padding(.horizontal, 18)
                 .screenWidth()
@@ -112,30 +133,192 @@ struct BadgesView: View {
         .buttonStyle(.plain)
     }
 
-    private var streakCard: some View {
-        HStack(spacing: 0) {
-            streakItem("🔥", Fmt.num(health.streak), "الستريك الحالي", Palette.orange)
-            Divider().frame(height: 44).overlay(Color.white.opacity(0.1))
-            streakItem("🏆", Fmt.num(health.longestStreak), "أطول ستريك", Palette.gold)
-            Divider().frame(height: 44).overlay(Color.white.opacity(0.1))
-            streakItem("🎯", Fmt.num(settings.goal), "هدفك", Palette.cyan)
+    private var xpRules: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("كيف تجمع XP؟", systemImage: "sparkles")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            rule("👟", "كل ١٠٠ خطوة", "+١ XP")
+            rule("💎", "كل درع تجيبه باليوم", "+٢٥ XP")
+            rule("🏁", "تحدي أسبوعي", "+١٥٠ XP")
+            rule("🏆", "تحدي شهري", "+٤٠٠ XP")
+            Text("كل شي يتحسب من سجل خطواتك، فمستواك يشمل أيامك القديمة بعد.")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundStyle(Palette.text3)
+                .padding(.top, 2)
         }
-        .padding(.vertical, 14)
-        .glassCard()
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(radius: 18)
     }
 
-    private func streakItem(_ icon: String, _ value: String, _ title: String, _ color: Color) -> some View {
-        VStack(spacing: 4) {
-            Text("\(icon) \(value)")
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            Text(title)
-                .font(.system(size: 11, design: .rounded))
+    private func rule(_ icon: String, _ title: String, _ xp: String) -> some View {
+        HStack {
+            Text("\(icon)  \(title)")
+                .font(.system(size: 13, design: .rounded))
                 .foregroundStyle(Palette.text2)
+            Spacer()
+            Text(xp)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(Palette.gold)
         }
-        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - بطاقة المستوى
+
+struct LevelCard: View {
+    let level: LevelInfo
+    let todayXP: Int
+
+    var body: some View {
+        let rank = level.rank
+        VStack(spacing: 14) {
+            HStack(spacing: 16) {
+                CrystalBadge(colors: rank.colors, label: Fmt.num(level.level), size: 92)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(rank.title)
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(rank.primary)
+                    Text("مستوى \(Fmt.num(level.level))")
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .shadow(color: rank.primary.opacity(0.6), radius: 10)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text("\(Fmt.num(level.xp)) XP")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Palette.text2)
+                }
+                Spacer(minLength: 0)
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.1))
+                        Capsule()
+                            .fill(rank.gradient)
+                            .frame(width: max(g.size.width * level.fraction, 6))
+                            .shadow(color: rank.primary.opacity(0.7), radius: 8)
+                    }
+                }
+                .frame(height: 10)
+                HStack {
+                    Text("باقي \(Fmt.num(level.remaining)) XP للمستوى \(Fmt.num(level.level + 1))")
+                    Spacer()
+                    Text("اليوم +\(Fmt.num(todayXP))")
+                        .foregroundStyle(Palette.green)
+                }
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(Palette.text2)
+            }
+        }
+        .padding(16)
+        .glassCard(tint: rank.primary)
+    }
+}
+
+// MARK: - التحديات
+
+struct ChallengesCard: View {
+    let title: String
+    let challenges: [Challenge]
+    let ends: Date
+    let tint: Color
+
+    private var daysLeft: Int {
+        let cal = AppCalendar.local
+        return max(cal.dateComponents([.day], from: AppCalendar.startOfToday(), to: ends).day ?? 0, 0)
+    }
+
+    private var daysLeftText: String {
+        switch daysLeft {
+        case ...1: return "آخر يوم!"
+        case 2: return "باقي يومين"
+        case 3...10: return "باقي \(Fmt.num(daysLeft)) أيام"
+        default: return "باقي \(Fmt.num(daysLeft)) يوم"
+        }
+    }
+
+    var body: some View {
+        let doneCount = challenges.filter(\.done).count
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("\(Fmt.num(doneCount))/\(Fmt.num(challenges.count))")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(tint)
+                Spacer()
+                Text(daysLeftText)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(daysLeft <= 1 ? Palette.orange : Palette.text3)
+            }
+            ForEach(challenges) { c in
+                ChallengeRow(challenge: c, tint: tint)
+            }
+        }
+        .padding(16)
+        .glassCard(tint: tint)
+    }
+}
+
+struct ChallengeRow: View {
+    let challenge: Challenge
+    let tint: Color
+    var compact = false
+
+    var body: some View {
+        let c = challenge
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(c.done ? Palette.green.opacity(0.2) : tint.opacity(0.12))
+                Image(systemName: c.done ? "checkmark" : c.icon)
+                    .font(.system(size: compact ? 13 : 16, weight: .bold))
+                    .foregroundStyle(c.done ? Palette.green : tint)
+            }
+            .frame(width: compact ? 32 : 40, height: compact ? 32 : 40)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(c.title)
+                        .font(.system(size: compact ? 13 : 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                    Spacer(minLength: 4)
+                    Text("+\(Fmt.num(c.xp)) XP")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(c.done ? Palette.green : Palette.gold)
+                }
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.08))
+                        Capsule()
+                            .fill(c.done ? AnyShapeStyle(Palette.green)
+                                         : AnyShapeStyle(LinearGradient(colors: [tint, tint.opacity(0.6)],
+                                                                         startPoint: .leading, endPoint: .trailing)))
+                            .frame(width: max(g.size.width * c.fraction, 4))
+                    }
+                }
+                .frame(height: 6)
+                if !compact {
+                    HStack {
+                        Text(c.detail)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Spacer(minLength: 4)
+                        Text(c.done ? "خلّصته ✓" : c.progressText)
+                            .foregroundStyle(c.done ? Palette.green : Palette.text2)
+                    }
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(Palette.text3)
+                }
+            }
+        }
     }
 }
 

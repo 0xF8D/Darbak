@@ -138,7 +138,7 @@ struct BadgeTier: Identifiable {
 
 enum SharedStore {
     static let appGroup = "group.com.f8d.steps"
-    static let snapshotKey = "stepsSnapshot"
+    static let snapshotKey = "stepsSnapshot2"
     static var defaults: UserDefaults { UserDefaults(suiteName: appGroup) ?? .standard }
 }
 
@@ -149,13 +149,13 @@ struct StepsSnapshot: Codable {
     var distanceKm: Double
     var kcal: Int
     var floors: Int
-    var streak: Int
+    var level: Int
     var updated: Date
 
     var progress: Double { min(Double(steps) / Double(max(goal, 1)), 1) }
 
     static let placeholder = StepsSnapshot(day: Date(), steps: 6_480, goal: 8_000, distanceKm: 4.8,
-                                           kcal: 260, floors: 3, streak: 5, updated: Date())
+                                           kcal: 260, floors: 3, level: 7, updated: Date())
 
     static func load() -> StepsSnapshot? {
         guard let data = SharedStore.defaults.data(forKey: SharedStore.snapshotKey) else { return nil }
@@ -168,10 +168,10 @@ struct StepsSnapshot: Codable {
         }
     }
 
-    /// نسخة فاضية ليوم جديد (نحتفظ بالهدف والستريك)
+    /// نسخة فاضية ليوم جديد (نحتفظ بالهدف والمستوى)
     func resetting(for day: Date) -> StepsSnapshot {
         StepsSnapshot(day: AppCalendar.local.startOfDay(for: day), steps: 0, goal: goal,
-                      distanceKm: 0, kcal: 0, floors: 0, streak: streak, updated: day)
+                      distanceKm: 0, kcal: 0, floors: 0, level: level, updated: day)
     }
 }
 

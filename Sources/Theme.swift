@@ -58,6 +58,7 @@ extension View {
             .environmentObject(HealthStore.shared)
             .environmentObject(WalkMode.shared)
             .environmentObject(FoodStore.shared)
+            .environmentObject(FriendStore.shared)
             .environment(\.layoutDirection, .rightToLeft)
             .environment(\.locale, Locale(identifier: "ar_SA"))
             .preferredColorScheme(.dark)

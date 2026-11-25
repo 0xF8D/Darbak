@@ -6,15 +6,15 @@
       "name": "دربك",
       "bundleIdentifier": "com.f8d.steps",
       "developerName": "0xF8D",
-      "subtitle": "خطواتك ودروعك وسعراتك",
-      "localizedDescription": "دربك: عداد خطوات مباشر مع دروع كريستال 7K-10K، ستريك وتجميد، ويدجت وشاشة قفل، وحاسبة سعرات وطبخاتك. © 0xF8D",
-      "iconURL": "https://raw.githubusercontent.com/USERNAME/REPO/main/icon.png",
+      "subtitle": "خطواتك ومستواك وتحدياتك",
+      "localizedDescription": "دربك: عداد خطوات مباشر مع مستويات XP، تحديات أسبوعية وشهرية، منافسة مع ربعك، دروع كريستال 7K-10K، ويدجت وشاشة قفل، وحاسبة سعرات وطبخاتك. © 0xF8D",
+      "iconURL": "https://raw.githubusercontent.com/0xF8D/steps/main/icon.png",
       "tintColor": "22E1FF",
       "versions": [
         {
-          "version": "2.0",
-          "date": "2026-11-24",
-          "downloadURL": "https://github.com/USERNAME/REPO/releases/download/latest/Darbak.ipa",
+          "version": "2.1",
+          "date": "2026-11-25",
+          "downloadURL": "https://github.com/0xF8D/steps/releases/download/latest/Darbak.ipa",
           "size": 3000000,
           "minOSVersion": "16.2"
         }

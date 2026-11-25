@@ -16,12 +16,12 @@ import CoreMotion
 import WidgetKit
 import Combine
 import UIKit
+import SwiftUI
 
 struct DayStat: Identifiable {
     let date: Date
     let steps: Int
     let isFuture: Bool
-    var frozen: Bool = false
     var id: Date { date }
 }
 
@@ -40,6 +40,32 @@ struct DayExtras {
     var floors: Int
 }
 
+/// احتفال يطلع فوق التطبيق: درع جديد، مستوى جديد، أو تحدي خلص
+struct CelebrationEvent: Identifiable, Equatable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+    let colors: [Color]
+    let label: String
+    var symbol: String? = nil
+
+    static func badge(_ tier: BadgeTier) -> CelebrationEvent {
+        CelebrationEvent(title: "درع جديد!", subtitle: "وصلت \(Fmt.num(tier.steps)) خطوة يا وحش 🔥",
+                         colors: tier.colors, label: tier.label)
+    }
+
+    static func level(_ level: Int) -> CelebrationEvent {
+        let rank = Rank.of(level: level)
+        return CelebrationEvent(title: "مستوى جديد!", subtitle: "صرت مستوى \(Fmt.num(level)) · \(rank.title) ⭐",
+                                colors: rank.colors, label: Fmt.num(level))
+    }
+
+    static func challenge(_ c: Challenge) -> CelebrationEvent {
+        CelebrationEvent(title: "خلّصت تحدي!", subtitle: "\(c.title) · +\(Fmt.num(c.xp)) XP",
+                         colors: [Palette.green, Palette.cyan], label: "", symbol: "flag.checkered")
+    }
+}
+
 final class HealthStore: ObservableObject {
     static let shared = HealthStore()
 
@@ -48,15 +74,13 @@ final class HealthStore: ObservableObject {
     @Published private(set) var isLoading = true
     @Published private(set) var errorMessage: String?
     @Published private(set) var access: HealthAccess = .checking
-    @Published private(set) var streak = 0
-    @Published private(set) var longestStreak = 0
-    @Published private(set) var frozenDays: Set<Date> = []
+    @Published private(set) var progress = ProgressState.empty
     @Published private(set) var liveDistanceM = 0.0
     @Published private(set) var liveFloors = 0
     @Published private(set) var hkDistanceKm = 0.0
     @Published private(set) var hkKcal = 0.0
     @Published private(set) var hkFloors = 0
-    @Published var celebration: BadgeTier?
+    @Published private(set) var celebration: CelebrationEvent?
 
     private let settings = AppSettings.shared
     private let store = HKHealthStore()
@@ -84,7 +108,8 @@ final class HealthStore: ObservableObject {
     private var baselineUntil = Date.distantFuture
     private var lastThousand = 0
     private var milestoneDay = Date.distantPast
-    private var streakKey = ""
+    private let engine = ProgressEngine()
+    private var celebrationQueue: [CelebrationEvent] = []
     private var bag = Set<AnyCancellable>()
 
     private var readTypes: Set<HKObjectType> {
@@ -205,7 +230,6 @@ final class HealthStore: ObservableObject {
             startPedometer()
             loadPedometerHistory()
             if healthReady { startQuery() }
-            streakKey = ""
             recompute()
             pushWidget(force: true)
         }
@@ -227,7 +251,6 @@ final class HealthStore: ObservableObject {
     }
 
     private func settingsChanged() {
-        streakKey = ""
         recompute()
         pushWidget(force: true)
     }
@@ -288,7 +311,6 @@ final class HealthStore: ObservableObject {
             }
             self.hkAnswered = true
             self.isLoading = false
-            self.streakKey = ""
             self.recompute()
         }
     }
@@ -318,7 +340,6 @@ final class HealthStore: ObservableObject {
                 merged.merge(map) { _, new in new }
                 if merged != self.hkSteps {
                     self.hkSteps = merged
-                    self.streakKey = ""
                     self.recompute()
                 }
             }
@@ -433,7 +454,6 @@ final class HealthStore: ObservableObject {
                 DispatchQueue.main.async {
                     guard let self else { return }
                     self.pedSteps[s] = n
-                    self.streakKey = ""
                     self.recompute()
                 }
             }
@@ -486,65 +506,12 @@ final class HealthStore: ObservableObject {
         if m != steps { steps = m }
         updateAccess()
 
-        updateStreaksIfNeeded()
+        let p = engine.compute(steps: m, today: t)
+        if p != progress { progress = p }
         checkMilestones()
+        checkProgress()
         pushWidget()
         WalkMode.shared.update(steps: todaySteps, goal: settings.goal, distanceKm: todayDistanceKm)
-    }
-
-    private func updateStreaksIfNeeded() {
-        let t = today
-        let goal = settings.goal
-        let reached = (steps[t] ?? 0) >= goal
-        let key = "\(t.timeIntervalSince1970)|\(goal)|\(reached)"
-        guard key != streakKey else { return }
-        streakKey = key
-        computeStreaks()
-    }
-
-    /// الستريك: أيام متتالية وصلت فيها هدفك. اليوم ما يكسر الستريك لين ينتهي.
-    /// التجميد (تلقائي): يوم واحد فائت بكل أسبوع (أحد إلى سبت) يحفظ الستريك بدون ما يزيده.
-    private func computeStreaks() {
-        let cal = AppCalendar.local
-        let goal = settings.goal
-        let freeze = true
-        let t = today
-
-        guard let first = steps.filter({ $0.value > 0 }).keys.min() else {
-            streak = 0
-            longestStreak = 0
-            frozenDays = []
-            return
-        }
-
-        var run = 0
-        var best = 0
-        var usedWeeks = Set<Date>()
-        var frozen = Set<Date>()
-        var d = first
-        while d <= t {
-            let n = steps[d] ?? 0
-            if n >= goal {
-                run += 1
-            } else if d == t {
-                // اليوم لسه ما خلص
-            } else {
-                let week = cal.dateInterval(of: .weekOfYear, for: d)?.start ?? d
-                if freeze && run > 0 && !usedWeeks.contains(week) {
-                    usedWeeks.insert(week)
-                    frozen.insert(d)
-                } else {
-                    run = 0
-                }
-            }
-            best = max(best, run)
-            guard let next = cal.date(byAdding: .day, value: 1, to: d) else { break }
-            d = next
-        }
-
-        if streak != run { streak = run }
-        if longestStreak != best { longestStreak = best }
-        if frozenDays != frozen { frozenDays = frozen }
     }
 
     // MARK: - الاهتزاز والاحتفال بالدروع
@@ -573,9 +540,70 @@ final class HealthStore: ObservableObject {
             let done = UserDefaults.standard.integer(forKey: celebratedKey(t))
             if tier.steps > done {
                 UserDefaults.standard.set(tier.steps, forKey: celebratedKey(t))
-                celebration = tier
-                Haptics.success()
+                celebrate(.badge(tier))
             }
+        }
+    }
+
+    // MARK: - المستوى والتحديات
+
+    private let seenLevelKey = "seenLevel"
+    private let seenChallengesKey = "seenChallenges"
+
+    /// يحتفل لما تطلع مستوى أو تخلص تحدي. أول مرة (بعد التحديث) نحفظ وين أنت بدون احتفال.
+    private func checkProgress() {
+        // ننتظر لين تجي أرقام الصحة، عشان ما نحتفل على أرقام ناقصة
+        guard hkAnswered || access == .unavailable else { return }
+        let d = UserDefaults.standard
+        let level = progress.level.level
+        let done = (progress.week + progress.month).filter(\.done)
+        var seen = Set(d.stringArray(forKey: seenChallengesKey) ?? [])
+
+        guard d.object(forKey: seenLevelKey) != nil else {
+            d.set(level, forKey: seenLevelKey)
+            seen.formUnion(done.map(\.id))
+            d.set(Array(seen), forKey: seenChallengesKey)
+            return
+        }
+        guard Date() >= baselineUntil,
+              UIApplication.shared.applicationState == .active else { return }
+
+        var changed = false
+        for c in done where !seen.contains(c.id) {
+            seen.insert(c.id)
+            changed = true
+            celebrate(.challenge(c))
+        }
+        if changed {
+            // نخلي آخر ١٠٠ بس
+            d.set(Array(seen.sorted().suffix(100)), forKey: seenChallengesKey)
+        }
+
+        let seenLevel = d.integer(forKey: seenLevelKey)
+        if level > seenLevel {
+            d.set(level, forKey: seenLevelKey)
+            celebrate(.level(level))
+        }
+    }
+
+    private func celebrate(_ e: CelebrationEvent) {
+        if celebration == nil {
+            celebration = e
+            Haptics.success()
+        } else {
+            celebrationQueue.append(e)
+        }
+    }
+
+    /// يقفل الاحتفال الحالي ويطلع اللي بعده (لو فيه)
+    func dismissCelebration(_ id: UUID) {
+        guard celebration?.id == id else { return }
+        celebration = nil
+        guard !celebrationQueue.isEmpty else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self, self.celebration == nil, !self.celebrationQueue.isEmpty else { return }
+            self.celebration = self.celebrationQueue.removeFirst()
+            Haptics.success()
         }
     }
 
@@ -595,7 +623,7 @@ final class HealthStore: ObservableObject {
 
     func snapshot() -> StepsSnapshot {
         StepsSnapshot(day: today, steps: todaySteps, goal: settings.goal, distanceKm: todayDistanceKm,
-                      kcal: todayKcal, floors: todayFloors, streak: streak, updated: Date())
+                      kcal: todayKcal, floors: todayFloors, level: progress.level.level, updated: Date())
     }
 
     // MARK: - Derived data
@@ -614,22 +642,13 @@ final class HealthStore: ObservableObject {
 
     var todayFloors: Int { max(hkFloors, liveDay == today ? liveFloors : 0) }
 
-    var yesterday: Date {
-        AppCalendar.local.date(byAdding: .day, value: -1, to: today) ?? today
-    }
-
-    /// الستريك محفوظ بالتجميد: فاتك أمس، واليوم لسه ما قفلت هدفك
-    var streakFrozen: Bool {
-        streak > 0 && frozenDays.contains(yesterday) && todaySteps < settings.goal
-    }
-
     /// آخر ٦ أيام قبل اليوم (من الأقدم لأمس). اليوم نفسه بالحلقة فوق.
     func lastDays(_ n: Int = 6) -> [DayStat] {
         let cal = AppCalendar.local
         let t = today
         return (1...n).reversed().compactMap { i in
             guard let d = cal.date(byAdding: .day, value: -i, to: t) else { return nil }
-            return DayStat(date: d, steps: steps[d] ?? 0, isFuture: false, frozen: frozenDays.contains(d))
+            return DayStat(date: d, steps: steps[d] ?? 0, isFuture: false)
         }
     }
 
@@ -658,7 +677,7 @@ final class HealthStore: ObservableObject {
         let t = today
         return (0..<7).compactMap { i in
             guard let d = cal.date(byAdding: .day, value: i, to: start) else { return nil }
-            return DayStat(date: d, steps: steps[d] ?? 0, isFuture: d > t, frozen: frozenDays.contains(d))
+            return DayStat(date: d, steps: steps[d] ?? 0, isFuture: d > t)
         }
     }
 }

@@ -10,6 +10,7 @@ struct DarbakApp: App {
     @StateObject private var health = HealthStore.shared
     @StateObject private var walk = WalkMode.shared
     @StateObject private var food = FoodStore.shared
+    @StateObject private var friends = FriendStore.shared
     @Environment(\.scenePhase) var phase
     private let timer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
@@ -34,6 +35,10 @@ struct DarbakApp: App {
                     Reminder.requestAuthorization()
                 }
                 .onReceive(timer) { _ in health.tick() }
+                .onOpenURL { url in
+                    // رابط كود صديق: darbak://f/...
+                    friends.importText(url.absoluteString)
+                }
                 .onChange(of: phase) { new in
                     if new == .active { health.tick(force: true) }
                     if new == .background {
@@ -59,20 +64,38 @@ enum BackgroundRefresh {
     }
 }
 
+enum AppTab: Hashable {
+    case home, progress, friends, calories, stats
+}
+
 struct RootView: View {
+    @EnvironmentObject var friends: FriendStore
+    @State private var tab: AppTab = .home
+
     var body: some View {
-        TabView {
-            HomeView()
+        TabView(selection: $tab) {
+            HomeView(openProgress: { tab = .progress })
                 .tabItem { Label("خطواتي", systemImage: "figure.walk") }
+                .tag(AppTab.home)
             BadgesView()
-                .tabItem { Label("الدروع", systemImage: "hexagon.fill") }
+                .tabItem { Label("التقدم", systemImage: "star.circle.fill") }
+                .tag(AppTab.progress)
+            FriendsView()
+                .tabItem { Label("الربع", systemImage: "person.3.fill") }
+                .tag(AppTab.friends)
             CaloriesView()
                 .tabItem { Label("السعرات", systemImage: "fork.knife") }
+                .tag(AppTab.calories)
             StatsView()
                 .tabItem { Label("إحصائيات", systemImage: "chart.bar.fill") }
+                .tag(AppTab.stats)
         }
         .tint(Palette.cyan)
         .overlay { CelebrationHost() }
+        .onChange(of: friends.importTick) { _ in
+            // فتحت رابط صديق: نوديك لصفحة الربع
+            tab = .friends
+        }
     }
 }
 
@@ -82,14 +105,15 @@ struct CelebrationHost: View {
 
     var body: some View {
         ZStack {
-            if let tier = health.celebration {
-                CelebrationView(tier: tier) {
-                    health.celebration = nil
+            if let event = health.celebration {
+                CelebrationView(event: event) {
+                    health.dismissCelebration(event.id)
                 }
+                .id(event.id)
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: health.celebration?.steps)
+        .animation(.easeInOut(duration: 0.3), value: health.celebration?.id)
         .allowsHitTesting(health.celebration != nil)
     }
 }

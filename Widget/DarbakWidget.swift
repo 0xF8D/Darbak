@@ -47,7 +47,7 @@ struct StepsProvider: TimelineProvider {
         let today = AppCalendar.local.startOfDay(for: date)
         guard let s = StepsSnapshot.load() else {
             return StepsSnapshot(day: today, steps: 0, goal: 8_000, distanceKm: 0, kcal: 0,
-                                 floors: 0, streak: 0, updated: date)
+                                 floors: 0, level: 1, updated: date)
         }
         return s.day == today ? s : s.resetting(for: date)
     }
@@ -61,7 +61,7 @@ struct StepsWidget: Widget {
             StepsWidgetView(entry: entry)
         }
         .configurationDisplayName("دربك")
-        .description("خطواتك اليوم وهدفك والستريك")
+        .description("خطواتك اليوم وهدفك ومستواك")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
@@ -124,7 +124,7 @@ struct StepsWidgetView: View {
                     Image(systemName: "figure.walk")
                     Text("دربك")
                     Spacer()
-                    if s.streak > 0 { Text("🔥\(Fmt.num(s.streak))") }
+                    Text("⭐\(Fmt.num(s.level))")
                 }
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 Text(Fmt.num(s.steps))
@@ -156,8 +156,8 @@ struct StepsWidgetView: View {
                 .padding(.horizontal, 12)
             }
             HStack(spacing: 6) {
-                Text("🔥 \(Fmt.num(s.streak))")
-                    .foregroundStyle(Palette.orange)
+                Text("⭐ \(Fmt.num(s.level))")
+                    .foregroundStyle(Palette.gold)
                 if let tier {
                     Text(tier.label)
                         .foregroundStyle(tier.primary)
@@ -191,9 +191,9 @@ struct StepsWidgetView: View {
                 row("location.north.line.fill", "\(Fmt.dec(s.distanceKm)) كم", Palette.cyan)
                 row("flame.fill", "\(Fmt.num(s.kcal)) سعرة", Palette.orange)
                 row("figure.stairs", "\(Fmt.num(s.floors)) طابق", Palette.violet)
-                Text("🔥 ستريك \(Fmt.num(s.streak))")
+                Text("⭐ مستوى \(Fmt.num(s.level))")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(Palette.orange)
+                    .foregroundStyle(Palette.gold)
             }
             Spacer(minLength: 0)
         }
