@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icon.png" width="120" alt="دربك">
+<img src="docs/social-preview.png" width="100%" alt="دربك · Darbak">
 
 # دربك · Darbak
 
