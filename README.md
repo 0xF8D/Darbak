@@ -62,3 +62,5 @@ SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل �
 ---
 
 <p align="center">© 2026 0xF8D · Saudi Made</p>
+
+<p align="center">مشروع ثاني: <a href="https://github.com/0xF8D/Baloot"><b>بلوت</b></a>، حاسبة البلوت الشعبية</p>
