@@ -68,6 +68,7 @@ enum Cloud {
         case "not_owner": return "صاحب المجموعة بس يقدر يطلع أحد"
         case "not_configured": return "المجموعات مو مفعلة في هذي النسخة"
         case "not_admin": return "هذي للأدمن بس"
+        case "consent_required": return "لازم توافق على المشاركة أول"
         default: return "صار خطأ، جرب مرة ثانية"
         }
     }
@@ -130,8 +131,12 @@ final class FriendStore: ObservableObject {
     @Published var pendingCode = ""
     @Published var toast: String?
 
-    let myID: String
-    private let secret: String
+    private(set) var myID: String
+    private var secret: String
+    /// وافق على مشاركة اسمه وخطواته مع الشلة (مطلوب قبل أي إرسال للسيرفر)
+    @Published var consented: Bool {
+        didSet { d.set(consented, forKey: "shareConsent") }
+    }
     private var timer: Timer?
     private var syncing = false
     private var dirty = true
@@ -142,6 +147,7 @@ final class FriendStore: ObservableObject {
     init() {
         name = d.string(forKey: "profileName") ?? ""
         emoji = d.string(forKey: "profileEmoji") ?? "🦁"
+        consented = d.bool(forKey: "shareConsent")
         if let id = d.string(forKey: "profileID"), UUID(uuidString: id) != nil {
             myID = id.lowercased()
         } else {
@@ -201,7 +207,7 @@ final class FriendStore: ObservableObject {
     func sync(force: Bool = false) async {
         guard Cloud.isConfigured else { return }
         let plan: (Bool, Data)? = await MainActor.run {
-            guard self.hasName, !self.syncing else { return nil }
+            guard self.hasName, self.consented, !self.syncing else { return nil }
             self.syncing = true
             let push = force || self.dirty || Date().timeIntervalSince(self.lastPush) > 50
             return (push, self.profilePayload())
@@ -225,7 +231,7 @@ final class FriendStore: ObservableObject {
 
     /// التطبيق انقفل: نرسل آخر خطواتك قبل ما iOS يوقفه (ياخذ ثواني)
     func syncOnClose() {
-        guard Cloud.isConfigured, hasName else { return }
+        guard Cloud.isConfigured, hasName, consented else { return }
         endBackgroundTask()
         bgTask = UIApplication.shared.beginBackgroundTask(withName: "darbak.sync") { [weak self] in
             self?.endBackgroundTask()
@@ -376,6 +382,11 @@ final class FriendStore: ObservableObject {
     /// يرسل حسابك أول (لازم قبل أي مجموعة)، بعدين ينفذ الطلب
     @discardableResult
     private func run(_ action: @escaping () async throws -> String) async -> Bool {
+        let agreed = await MainActor.run { self.consented }
+        guard agreed else {
+            await show(Cloud.message(for: Cloud.Failure(code: "consent_required")))
+            return false
+        }
         let payload: Data? = await MainActor.run {
             guard self.hasName else { return nil }
             self.busy = true
@@ -405,6 +416,48 @@ final class FriendStore: ObservableObject {
 
     private func show(_ message: String) async {
         await MainActor.run { self.toast = message }
+    }
+
+    // MARK: حذف الحساب (مطلوب من أبل)
+
+    /// يحذف حسابك من السيرفر (ويطلعك من كل المجموعات)، ويبدأ من جديد في الجوال
+    @discardableResult
+    func deleteAccount() async -> Bool {
+        guard Cloud.isConfigured else { return false }
+        await MainActor.run { self.busy = true }
+        do {
+            _ = try await Cloud.call("darbak_delete_me", auth())
+        } catch let e as Cloud.Failure where e.code == "forbidden" {
+            // ما له حساب في السيرفر أصلا: نكمل ونمسح اللي في الجوال
+        } catch {
+            await MainActor.run { self.busy = false }
+            await show(Cloud.message(for: error))
+            return false
+        }
+        await MainActor.run {
+            self.resetLocal()
+            self.busy = false
+            self.toast = "انحذف حسابك وبياناتك ✓"
+        }
+        return true
+    }
+
+    private func resetLocal() {
+        groups = []
+        d.removeObject(forKey: groupsKey)
+        let id = UUID().uuidString.lowercased()
+        d.set(id, forKey: "profileID")
+        myID = id
+        let s = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "")
+        d.set(s, forKey: "profileSecret")
+        secret = s
+        consented = false
+        isAdmin = false
+        adminChecked = false
+        dirty = true
+        lastPush = .distantPast
+        lastSync = nil
+        name = ""
     }
 
     // MARK: روابط الدعوة: darbak://join/ABCD1234
@@ -470,6 +523,9 @@ struct FriendsView: View {
                     if !Cloud.isConfigured {
                         notice("المجموعات مو مفعلة في هذي النسخة.")
                     } else {
+                        if !friends.consented {
+                            consentCard
+                        }
                         if editingProfile || !friends.hasName {
                             profileEditor
                         } else {
@@ -830,6 +886,55 @@ struct FriendsView: View {
 
     // MARK: - إنشاء ودخول
 
+    /// موافقة على المشاركة (قبل أي إرسال للسيرفر)
+    private var consentCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("قبل ما تدخل الشلة", systemImage: "hand.raised.fill")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text("عشان تتنافس مع شلتك، دربك يرسل لسيرفر المجموعات:")
+                .font(.system(size: 13, design: .rounded))
+                .foregroundStyle(Palette.text2)
+            consentRow("person.fill", "اسمك ورمزك ومستواك")
+            consentRow("figure.walk", "مجموع خطواتك لكل يوم في الأسبوع")
+            Text("ما يشوفها إلا أعضاء مجموعاتك. وما ينرسل أي شي ثاني من «صحتي»، ولا موقعك ولا رقمك ولا إيميلك. وتقدر تحذف حسابك وبياناتك أي وقت من الإعدادات.")
+                .font(.system(size: 12, design: .rounded))
+                .foregroundStyle(Palette.text2)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.tap()
+                    friends.consented = true
+                    Task { await friends.sync(force: true) }
+                } label: {
+                    Label("أوافق", systemImage: "checkmark")
+                }
+                .buttonStyle(NeonButtonStyle(colors: [Palette.cyan, Palette.blue]))
+                Link(destination: AppLinks.privacy) {
+                    Text("سياسة الخصوصية")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Palette.cyan)
+                        .underline()
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(tint: Palette.cyan)
+    }
+
+    private func consentRow(_ icon: String, _ text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Palette.cyan)
+                .frame(width: 20)
+            Text(text)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+    }
+
     private var joinCreateCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(friends.groups.isEmpty ? "ابدأ مع شلتك" : "مجموعة ثانية؟")
@@ -875,7 +980,7 @@ struct FriendsView: View {
         }
         .padding(16)
         .glassCard()
-        .disabled(!friends.hasName || friends.busy)
+        .disabled(!friends.hasName || !friends.consented || friends.busy)
         .opacity(friends.hasName ? 1 : 0.5)
     }
 

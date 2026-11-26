@@ -5,6 +5,11 @@
 
 import SwiftUI
 
+enum AppLinks {
+    static let privacy = URL(string: "https://github.com/0xF8D/Darbak/blob/main/PRIVACY.md")!
+    static let support = URL(string: "https://github.com/0xF8D/Darbak/issues")!
+}
+
 final class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 

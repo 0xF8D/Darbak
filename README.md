@@ -45,11 +45,13 @@ https://raw.githubusercontent.com/0xF8D/Darbak/main/apps.json
 
 ## الخصوصية
 
+[سياسة الخصوصية كاملة](PRIVACY.md)
+
 بياناتك تبقى في جوالك. لو دخلت مجموعة، ينحفظ اسمك ورمزك ومستواك وخطوات أسبوعك بس، وما يشوفها إلا أعضاء مجموعتك. ما فيه حسابات ولا إيميل.
 
 ## البناء
 
-SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`. المجموعات تشتغل على Supabase (`supabase/schema.sql` ثم `supabase/admin.sql`).
+SwiftUI + XcodeGen، ويتبنى تلقائي على GitHub Actions مع كل تحديث على `main`. المجموعات تشتغل على Supabase (`supabase/schema.sql` ثم `admin.sql` ثم `account.sql`).
 
 ---
 

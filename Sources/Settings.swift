@@ -28,6 +28,7 @@ struct SettingsView: View {
     @EnvironmentObject var friends: FriendStore
     @Environment(\.openURL) private var openURL
     @State private var showAdmin = false
+    @State private var confirmDelete = false
     @State private var showImporter = false
     @State private var importing = false
     @State private var importMessage: String?
@@ -46,6 +47,9 @@ struct SettingsView: View {
                         walkCard
                         if friends.isAdmin {
                             adminCard
+                        }
+                        if Cloud.isConfigured {
+                            accountCard
                         }
                         about
                     }
@@ -272,6 +276,45 @@ struct SettingsView: View {
         case .unavailable:
             return ("iphone.slash", Palette.text2, "الجهاز ما يدعم الصحة",
                     "يقرأ من عداد الجوال بس.")
+        }
+    }
+
+    /// حذف الحساب والبيانات من سيرفر الشلة (مطلوب من أبل)
+    private var accountCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("حسابك في الشلة", systemImage: "person.crop.circle")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text("اسمك ورمزك ومستواك وخطوات أسبوعك محفوظة في سيرفر المجموعات عشان تشوفها شلتك. تقدر تحذفها كلها، وتطلع من كل المجموعات.")
+                .font(.system(size: 12, design: .rounded))
+                .foregroundStyle(Palette.text2)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button(role: .destructive) {
+                    confirmDelete = true
+                } label: {
+                    Label("احذف حسابي وبياناتي", systemImage: "trash")
+                }
+                .buttonStyle(SoftButtonStyle(color: Palette.pink))
+                .disabled(friends.busy)
+                Link(destination: AppLinks.privacy) {
+                    Text("سياسة الخصوصية")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Palette.cyan)
+                        .underline()
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
+        .confirmationDialog("تحذف حسابك وبياناتك؟", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("احذف كل شي", role: .destructive) {
+                Task { await friends.deleteAccount() }
+            }
+            Button("إلغاء", role: .cancel) {}
+        } message: {
+            Text("تطلع من كل المجموعات، والمجموعات اللي أنت صاحبها تنحذف. خطواتك في جوالك ما تتأثر.")
         }
     }
 

@@ -6,8 +6,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "2.9.1"
-    CURRENT_PROJECT_VERSION: "12"
+    MARKETING_VERSION: "3.0"
+    CURRENT_PROJECT_VERSION: "13"
     TARGETED_DEVICE_FAMILY: "1,2"
 targets:
   Darbak:
@@ -54,7 +54,7 @@ targets:
           - fetch
         BGTaskSchedulerPermittedIdentifiers:
           - com.f8d.steps.refresh
-        NSHealthShareUsageDescription: "دربك يقرأ خطواتك ومسافتك وسعراتك والطوابق من الصحة (الجوال والساعة) عشان يحسب دروعك ومستواك وتحدياتك."
+        NSHealthShareUsageDescription: "دربك يقرأ خطواتك ومسافتك وسعراتك والطوابق من الصحة (الجوال والساعة) عشان يحسب مستواك وتحدياتك ودروعك. لو دخلت شلة، ينرسل لها مجموع خطواتك اليومي بس."
         NSMotionUsageDescription: "دربك يستخدم عداد خطوات الجوال عشان يحدث خطواتك مباشرة وأنت تمشي."
         NSLocationWhenInUseUsageDescription: "الموقع يستخدم بس لما تشغل «وضع المشي» عشان يبقى التطبيق شغال بالخلفية ويحدث خطواتك على شاشة القفل. ما نحفظ موقعك."
         NSLocationAlwaysAndWhenInUseUsageDescription: "الموقع يستخدم بس لما تشغل «وضع المشي» عشان يبقى التطبيق شغال بالخلفية ويحدث خطواتك على شاشة القفل. ما نحفظ موقعك."
